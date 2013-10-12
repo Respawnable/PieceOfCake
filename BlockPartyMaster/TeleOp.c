@@ -62,7 +62,7 @@ void driveMotors()
 				joyRight = -1*pow(1+.056,abs(joyRight));
 		}
 
-		motor[motorL] = (joyLeft)*-100/127;
+		motor[motorL] = (joyLeft)*100/127;
 		motor[motorR] = (joyRight)*100/127;
 	}
 	else

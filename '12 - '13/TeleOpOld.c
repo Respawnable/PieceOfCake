@@ -1,4 +1,4 @@
-`#pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
+#pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
 #pragma config(Motor,  motorA,           ,             tmotorNXT, PIDControl)
 #pragma config(Motor,  motorC,          motorGrab,     tmotorNXT, PIDControl)
 #pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, openLoop)
@@ -228,15 +228,15 @@ task main()
 		nxtDisplayString(4, "Buttons: %d", joystick.joy1_Buttons);
 		nxtDisplayString(5, "TopHat:  %d", joystick.joy1_TopHat);
 		// Drive Motors
-		driveMotors();
+		//driveMotors();
 
 		// Grabber Control
-		moveGrabber();
+		//moveGrabber();
 
 		// Rotate arm
-		rotateArm();
+		//rotateArm();
 
 		// Raise or Lower arm
-		raiseArm();
+		//raiseArm();
 	}
 }

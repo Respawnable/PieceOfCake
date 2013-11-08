@@ -1,2 +1,0 @@
-network: SV-Robotics
-pass: ftc37638034

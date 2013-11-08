@@ -1,9 +1,13 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
+#pragma config(Sensor, S1,     ,               sensorI2CMuxController)
 #pragma config(Motor,  motorA,           ,             tmotorNXT, PIDControl)
-#pragma config(Motor,  motorC,           ,             tmotorNXT, PIDControl)
+#pragma config(Motor,  motorC,          motorGrab,     tmotorNXT, PIDControl)
 #pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, openLoop)
-#pragma config(Servo,  srvo_S1_C3_2,    servo2,               tServoNone)
+#pragma config(Motor,  mtr_S1_C2_1,     motorRO,       tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C2_2,     motorRA,       tmotorTetrix, openLoop)
+#pragma config(Servo,  srvo_S1_C3_1,    servoLeft,            tServoStandard)
+#pragma config(Servo,  srvo_S1_C3_2,    servoRight,           tServoStandard)
 #pragma config(Servo,  srvo_S1_C3_3,    servo3,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_4,    servo4,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_5,    servo5,               tServoNone)
@@ -24,6 +28,18 @@
 #include "JoystickDriver.c"  //Include file to "handle" the Bluetooth messages.
 
 #define JOYSTICK_MIN 10
+int wrist_pos=24;          //starting position for wrist servo
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                                    initializeRobot
+//
+// Prior to the start of tele-op mode, you may want to perform some initialization on your robot
+// and the variables within your program.
+//
+// In most cases, you may not have to add any code to this function and it will remain "empty".
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void initializeRobot()
 {
@@ -32,6 +48,12 @@ void initializeRobot()
 	SensorType[S2] = sensorNone;
 	SensorType[S3] = sensorNone;
 	SensorType[S4] = sensorNone;
+
+	servoChangeRate[servoLeft] =1;          // Slow the Servo Change Rate down to only 4 positions per update.
+	servo[servoLeft] = wrist_pos;                              // Move servo1 to position to starting position
+
+	servoChangeRate[servoRight] =1;          // Slow the Servo Change Rate down to only 4 positions per update.
+	servo[servoRight] = wrist_pos;                              // Move servo1 to position to starting position
 }
 
 // Operate the two drive motors
@@ -62,7 +84,7 @@ void driveMotors()
 				joyRight = -1*pow(1+.056,abs(joyRight));
 		}
 
-		motor[motorL] = (joyLeft)*-100/127;
+		motor[motorL] = (joyLeft)*100/127;
 		motor[motorR] = (joyRight)*100/127;
 	}
 	else
@@ -70,6 +92,34 @@ void driveMotors()
 		motor[motorL] = 0;
 		motor[motorR] = 0;
 	}
+}
+
+void moveGrabber()
+{
+	//ROBOT ARM GRAB CODE
+	int buttonValues = joystick.joy1_Buttons;
+	int grabUp = buttonValues & 64;
+	int grabDown = buttonValues & 16;
+	int closeGrabber =  buttonValues & 32;
+	int openGrabber = buttonValues & 128;
+
+	if ((grabUp + grabDown + closeGrabber + openGrabber) == 0)
+	{
+		return;
+	}
+
+	if (grabUp && wrist_pos <= 255)
+	{
+		wrist_pos += 1;
+	}
+
+	if (grabDown && wrist_pos >= 0)
+	{
+		wrist_pos -= 1;
+	}
+	servo[servoLeft] = wrist_pos;
+
+	servo[servoRight] = -wrist_pos;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -101,14 +151,40 @@ void driveMotors()
 
 task main()
 {
+
 	initializeRobot();
 
 	//waitForStart();   // wait for start of tele-op phase
 
 	while (true)
 	{
+		///////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////
+		////                                                   ////
+		////      Add your robot specific tele-op code here.   ////
+		////                                                   ////
+		///////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////
+
 		getJoystickSettings(joystick);   // Obtain current game controller settings
+
+		// Display the settings on the NXT Brick
+		nxtDisplayString(0, "joy1_x1: %d", joystick.joy1_x1);
+		nxtDisplayString(1, "joy1_y1: %d", joystick.joy1_y1);
+		nxtDisplayString(2, "joy1_x2: %d", joystick.joy1_x2);
+		nxtDisplayString(3, "joy1_y2: %d", joystick.joy1_y2);
+		nxtDisplayString(4, "Buttons: %d", joystick.joy1_Buttons);
+		nxtDisplayString(5, "TopHat:  %d", joystick.joy1_TopHat);
 		// Drive Motors
-		driveMotors();
+		//driveMotors();
+
+		// Grabber Control
+		moveGrabber();
+
+		// Rotate arm
+		//rotateArm();
+
+		// Raise or Lower arm
+		//raiseArm();
 	}
 }

@@ -1,8 +1,11 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
+#pragma config(Sensor, S1,     ,               sensorI2CMuxController)
 #pragma config(Motor,  motorA,           ,             tmotorNXT, PIDControl)
 #pragma config(Motor,  motorC,           ,             tmotorNXT, PIDControl)
 #pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C2_1,     motorF,        tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C2_2,     motorG,        tmotorTetrix, openLoop)
 #pragma config(Servo,  srvo_S1_C3_1,    servoLeft,            tServoStandard)
 #pragma config(Servo,  srvo_S1_C3_2,    servoRight,           tServoStandard)
 #pragma config(Servo,  srvo_S1_C3_3,    servo3,               tServoNone)
@@ -19,7 +22,7 @@
 
 #define JOYSTICK_MIN 10
 
-int wrist_pos=24;          //starting position for wrist servo
+int servo_pos=24;          //starting position for servo
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                    initializeRobot
@@ -28,48 +31,11 @@ int wrist_pos=24;          //starting position for wrist servo
 //initializing robot, fix bugs and position servos, etc.. here
 void initializeRobot()
 {
-	servoChangeRate[servoLeft] =1;          // Slow the Servo Change Rate down to only 4 positions per update.
-	servo[servoLeft] = wrist_pos;                              // Move servo1 to position to starting position
+	servo[servoLeft] = servo_pos;                              // Move servo1 to position to starting position
 
-	servoChangeRate[servoRight] =1;          // Slow the Servo Change Rate down to only 4 positions per update.
-	servo[servoRight] = wrist_pos;                              // Move servo1 to position to starting position
+	servo[servoRight] = servo_pos;                              // Move servo1 to position to starting position
 }
 
-//code to control the wheels, aka "driving"
-void driveMotors()
-{
-	int joyLeft = joystick.joy1_y1;
-	int joyRight = joystick.joy1_y2;
-
-	if ((abs(joyLeft) > JOYSTICK_MIN) || (abs(joyRight) > JOYSTICK_MIN))
-	{
-		if (abs(joyLeft) < 80)
-		{
-			if (joyLeft > 0)
-				joyLeft = 1*pow(1+.056,joyLeft);
-			else
-				joyLeft = -1*pow(1+.056,abs(joyLeft));
-		}
-
-		if (abs(joyRight) < 80)
-		{
-			if (joyRight > 0)
-				joyRight = 1*pow(1+.056,joyRight);
-			else
-				joyRight = -1*pow(1+.056,abs(joyRight));
-		}
-
-		motor[motorL] = (joyLeft)*100/127;
-		motor[motorR] = (joyRight)*100/127;
-	}
-	else
-	{
-		motor[motorL] = 0;
-		motor[motorR] = 0;
-	}
-}
-
-//SEVERE Servo Control EX-treme 2013!!!
 void moveServos()
 {
 	int buttonValues = joystick.joy1_Buttons;
@@ -81,18 +47,18 @@ void moveServos()
 		return;
 	}
 
-	if (servoUp && wrist_pos <= 255)
+	if (servoUp && servo_pos <= 255)
 	{
-		wrist_pos += 1;
+		servo_pos += 5;
 	}
 
-	if (servoDown && wrist_pos >= 0)
+	if (servoDown && servo_pos >= 0)
 	{
-		wrist_pos -= 1;
+		servo_pos -= 5;
 	}
-	servo[servoLeft] = wrist_pos;
+	servo[servoLeft] = servo_pos;
 
-	servo[servoRight] = -wrist_pos;
+	servo[servoRight] = -servo_pos;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -118,16 +84,8 @@ task main()
 		nxtDisplayString(4, "Buttons: %d", joystick.joy1_Buttons);
 		nxtDisplayString(5, "TopHat:  %d", joystick.joy1_TopHat);
 
-		// Drive Motors
-		driveMotors();
-
 		// Servos
 		moveServos();
 
-		// Rotate arm
-		//rotateArm();
-
-		// Raise or Lower arm
-		//raiseArm();
 	}
 }

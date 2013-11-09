@@ -1,10 +1,8 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
 #pragma config(Motor,  motorA,           ,             tmotorNXT, PIDControl)
-#pragma config(Motor,  motorC,          motorGrab,     tmotorNXT, PIDControl)
+#pragma config(Motor,  motorC,           ,             tmotorNXT, PIDControl)
 #pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, openLoop)
-#pragma config(Motor,  mtr_S1_C2_1,     motorRO,       tmotorTetrix, openLoop)
-#pragma config(Motor,  mtr_S1_C2_2,     motorRA,       tmotorTetrix, openLoop)
 #pragma config(Servo,  srvo_S1_C3_1,    servoLeft,            tServoStandard)
 #pragma config(Servo,  srvo_S1_C3_2,    servoRight,           tServoStandard)
 #pragma config(Servo,  srvo_S1_C3_3,    servo3,               tServoNone)
@@ -20,12 +18,14 @@
 #include "JoystickDriver.c"  //Include file to "handle" the Bluetooth messages.
 
 #define JOYSTICK_MIN 10
+
 int wrist_pos=24;          //starting position for wrist servo
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                    initializeRobot
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//initializing robot, fix bugs and position servos, etc.. here
 void initializeRobot()
 {
 	servoChangeRate[servoLeft] =1;          // Slow the Servo Change Rate down to only 4 positions per update.
@@ -75,10 +75,8 @@ void moveServos()
 	int buttonValues = joystick.joy1_Buttons;
 	int servoUp = buttonValues & 64;
 	int servoDown = buttonValues & 16;
-	int closeGrabber =  buttonValues & 32;
-	int openGrabber = buttonValues & 128;
 
-	if ((servoUp + servoDown + closeGrabber + openGrabber) == 0)
+	if ((servoUp + servoDown) == 0)
 	{
 		return;
 	}

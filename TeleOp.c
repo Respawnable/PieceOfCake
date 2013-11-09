@@ -1,8 +1,11 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
-#pragma config(Motor,  motorA,           ,             tmotorNXT, PIDControl)
-#pragma config(Motor,  motorC,           ,             tmotorNXT, PIDControl)
-#pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, openLoop)
-#pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, openLoop)
+#pragma config(Sensor, S1,     ,               sensorI2CMuxController)
+#pragma config(Motor,  motorA,           ,             tmotorNXT, openLoop)
+#pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, openLoop, reversed)
+#pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, openLoop, reversed)
+#pragma config(Motor,  mtr_S1_C2_1,     motorF,        tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C2_2,     motorG,        tmotorTetrix, openLoop)
+#pragma config(Servo,  srvo_S1_C3_1,    servo1,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_2,    servo2,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_3,    servo3,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_4,    servo4,               tServoNone)
@@ -137,7 +140,15 @@ task main()
     // You may be able to find "snippets" of code that are similar to the functions that you want to
     // perform.
 
-  		getJoystickSettings(joystick);   // Obtain current game controller settings
+  	getJoystickSettings(joystick);   // Obtain current game controller settings
+
+  	nxtDisplayString(0, "joy1_x1: %d", joystick.joy1_x1);
+		nxtDisplayString(1, "joy1_y1: %d", joystick.joy1_y1);
+		nxtDisplayString(2, "joy1_x2: %d", joystick.joy1_x2);
+		nxtDisplayString(3, "joy1_y2: %d", joystick.joy1_y2);
+		nxtDisplayString(4, "Buttons: %d", joystick.joy1_Buttons);
+		nxtDisplayString(5, "TopHat:  %d", joystick.joy1_TopHat);
+
 		// Drive Motors
 		driveMotors();
 

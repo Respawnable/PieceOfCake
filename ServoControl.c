@@ -1,5 +1,4 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
-#pragma config(Sensor, S1,     ,               sensorI2CMuxController)
 #pragma config(Motor,  motorA,           ,             tmotorNXT, PIDControl)
 #pragma config(Motor,  motorC,          motorGrab,     tmotorNXT, PIDControl)
 #pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, openLoop)
@@ -43,12 +42,6 @@ int wrist_pos=24;          //starting position for wrist servo
 
 void initializeRobot()
 {
-	// Place code here to initialize servos to starting positions.
-	// Disabling sensors because of memory bug.
-	SensorType[S2] = sensorNone;
-	SensorType[S3] = sensorNone;
-	SensorType[S4] = sensorNone;
-
 	servoChangeRate[servoLeft] =1;          // Slow the Servo Change Rate down to only 4 positions per update.
 	servo[servoLeft] = wrist_pos;                              // Move servo1 to position to starting position
 
@@ -56,7 +49,6 @@ void initializeRobot()
 	servo[servoRight] = wrist_pos;                              // Move servo1 to position to starting position
 }
 
-// Operate the two drive motors
 void driveMotors()
 {
 	int joyLeft = joystick.joy1_y1;
@@ -94,9 +86,8 @@ void driveMotors()
 	}
 }
 
-void moveGrabber()
+void moveServos()
 {
-	//ROBOT ARM GRAB CODE
 	int buttonValues = joystick.joy1_Buttons;
 	int grabUp = buttonValues & 64;
 	int grabDown = buttonValues & 16;
@@ -168,18 +159,19 @@ task main()
 
 		getJoystickSettings(joystick);   // Obtain current game controller settings
 
-		// Display the settings on the NXT Brick
+		//Display Joystick Values for Testing - Not Used in Competition
 		nxtDisplayString(0, "joy1_x1: %d", joystick.joy1_x1);
 		nxtDisplayString(1, "joy1_y1: %d", joystick.joy1_y1);
 		nxtDisplayString(2, "joy1_x2: %d", joystick.joy1_x2);
 		nxtDisplayString(3, "joy1_y2: %d", joystick.joy1_y2);
 		nxtDisplayString(4, "Buttons: %d", joystick.joy1_Buttons);
 		nxtDisplayString(5, "TopHat:  %d", joystick.joy1_TopHat);
-		// Drive Motors
-		//driveMotors();
 
-		// Grabber Control
-		moveGrabber();
+		// Drive Motors
+		driveMotors();
+
+		// Servos
+		moveServos();
 
 		// Rotate arm
 		//rotateArm();

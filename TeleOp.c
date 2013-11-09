@@ -25,13 +25,28 @@
 
 #define JOYSTICK_MIN 10
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//                                    initializeRobot
+//
+// Prior to the start of tele-op mode, you may want to perform some initialization on your robot
+// and the variables within your program.
+//
+// In most cases, you may not have to add any code to this function and it will remain "empty".
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void initializeRobot()
 {
-	// Place code here to initialize servos to starting positions.
-	// Disabling sensors because of memory bug.
+  // Place code here to sinitialize servos to starting positions.
+  // Sensors are automatically configured and setup by ROBOTC. They may need a brief time to stabilize.
+
+	// Disabling sensors because of memory bug. Remove this if fixed?
 	SensorType[S2] = sensorNone;
 	SensorType[S3] = sensorNone;
 	SensorType[S4] = sensorNone;
+
+  return;
 }
 
 // Operate the two drive motors
@@ -72,6 +87,7 @@ void driveMotors()
 	}
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                                         Main Task
@@ -101,14 +117,29 @@ void driveMotors()
 
 task main()
 {
-	initializeRobot();
+  initializeRobot();
 
-	//waitForStart();   // wait for start of tele-op phase
+  //waitForStart();   // wait for start of tele-op phase
 
-	while (true)
-	{
-		getJoystickSettings(joystick);   // Obtain current game controller settings
+  while (true)
+  {
+	  ///////////////////////////////////////////////////////////
+	  ///////////////////////////////////////////////////////////
+	  ////                                                   ////
+	  ////      Add your robot specific tele-op code here.   ////
+	  ////                                                   ////
+	  ///////////////////////////////////////////////////////////
+	  ///////////////////////////////////////////////////////////
+
+    // Insert code to have servos and motors respond to joystick and button values.
+
+    // Look in the ROBOTC samples folder for programs that may be similar to what you want to perform.
+    // You may be able to find "snippets" of code that are similar to the functions that you want to
+    // perform.
+
+  		getJoystickSettings(joystick);   // Obtain current game controller settings
 		// Drive Motors
 		driveMotors();
-	}
+
+  }
 }

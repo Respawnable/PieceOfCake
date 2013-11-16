@@ -22,7 +22,9 @@
 
 #define JOYSTICK_MIN 10
 
-int servo_pos=24;          //starting position for servo
+//starting position for servos
+int servo_pos1=24;
+int servo_pos2=24;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                    initializeRobot
@@ -31,34 +33,36 @@ int servo_pos=24;          //starting position for servo
 //initializing robot, fix bugs and position servos, etc.. here
 void initializeRobot()
 {
-	servo[servoLeft] = servo_pos;                              // Move servo1 to position to starting position
+	servo[servoLeft] = servo_pos1;                              // Move servo1 to position to starting position
 
-	servo[servoRight] = servo_pos;                              // Move servo1 to position to starting position
+	servo[servoRight] = servo_pos2;                              // Move servo1 to position to starting position
 }
 
 void moveServos()
 {
 	int buttonValues = joystick.joy1_Buttons;
-	int servoUp = buttonValues & 64;
-	int servoDown = buttonValues & 16;
+	int servoUp = buttonValues & 16;
+	int servoDown = buttonValues & 64;
 
 	if ((servoUp + servoDown) == 0)
 	{
 		return;
 	}
 
-	if (servoUp && servo_pos <= 255)
+	if (servoUp <= 255)
 	{
-		servo_pos += 5;
+		servo_pos1 += 15;
+		servo_pos2 += 15;
 	}
 
-	if (servoDown && servo_pos >= 0)
+	if (servoDown >= 0)
 	{
-		servo_pos -= 5;
+		servo_pos1 -= 5;
+		servo_pos2 -= 5;
 	}
-	servo[servoLeft] = servo_pos;
+	servo[servoLeft] = servo_pos1;
 
-	servo[servoRight] = -servo_pos;
+	servo[servoRight] = servo_pos2;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

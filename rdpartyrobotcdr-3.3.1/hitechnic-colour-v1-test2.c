@@ -13,15 +13,16 @@
  *
  * Changelog:
  * - 0.1: Initial release
- * - 0.2: More comments
- * - 0.3: Removed common.h from includes
+ * - 0.2: changed the intro and info diplay
+ * - 0.3: more comments
+ * - 0.4: Removed common.h from includes
  *
  * Credits:
  * - Big thanks to HiTechnic for providing me with the hardware necessary to write and test this.
  *
  * License: You may use this code as you wish, provided you give credit where it's due.
  *
- * THIS CODE WILL ONLY WORK WITH ROBOTC VERSION 3.59 AND HIGHER. 
+ * THIS CODE WILL ONLY WORK WITH ROBOTC VERSION 3.59 AND HIGHER.
 
  * Xander Soldaat (xander_at_botbench.com)
  * 20 February 2011

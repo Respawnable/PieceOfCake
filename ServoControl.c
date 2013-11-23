@@ -33,36 +33,34 @@ int servo_pos2=24;
 //initializing robot, fix bugs and position servos, etc.. here
 void initializeRobot()
 {
-	servo[servoLeft] = servo_pos1;                              // Move servo1 to position to starting position
+	servo[servoLeft] = servo_pos1;
 
-	servo[servoRight] = servo_pos2;                              // Move servo1 to position to starting position
+	servo[servoRight] = servo_pos2;
 }
 
 void moveServos()
 {
-	int buttonValues = joystick.joy1_Buttons;
-	int servoUp = buttonValues & 16;
-	int servoDown = buttonValues & 64;
+	int button5 = joy1Btn(5);
+	int button7 = joy1Btn(7);
+	int buttonUp = button5;
+	int buttonDown = button7;
 
-	if ((servoUp + servoDown) == 0)
+	if ((buttonUp + buttonDown) == 0)
 	{
 		return;
 	}
 
-	if (servoUp <= 255)
+	if (buttonUp == 1)
 	{
-		servo_pos1 += 15;
-		servo_pos2 += 15;
+		servo[servoLeft] += 15;
+		servo[servoRight] += 15;
 	}
 
-	if (servoDown >= 0)
+	if (buttonDown == 1)
 	{
-		servo_pos1 -= 5;
-		servo_pos2 -= 5;
+		servo[servoLeft] -= 5;
+		servo[servoRight] -= 5;
 	}
-	servo[servoLeft] = servo_pos1;
-
-	servo[servoRight] = servo_pos2;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,10 +76,10 @@ task main()
 
 	while (true)
 	{
+		nxtDisplayString(0, "joy1_x1: %d", joystick.joy1_x1);
 		getJoystickSettings(joystick);   // Obtain current game controller settings
 
 		//Display Joystick Values for Testing - Not Used in Competition
-		nxtDisplayString(0, "joy1_x1: %d", joystick.joy1_x1);
 		nxtDisplayString(1, "joy1_y1: %d", joystick.joy1_y1);
 		nxtDisplayString(2, "joy1_x2: %d", joystick.joy1_x2);
 		nxtDisplayString(3, "joy1_y2: %d", joystick.joy1_y2);

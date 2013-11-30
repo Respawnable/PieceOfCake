@@ -1,8 +1,8 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
 #pragma config(Sensor, S1,     ,               sensorI2CMuxController)
 #pragma config(Motor,  motorA,           ,             tmotorNXT, openLoop)
-#pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, openLoop, reversed)
-#pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, openLoop, reversed)
+#pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, PIDControl, reversed, encoder)
+#pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, PIDControl, encoder)
 #pragma config(Motor,  mtr_S1_C2_1,     motorF,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C2_2,     motorG,        tmotorTetrix, openLoop)
 #pragma config(Servo,  srvo_S1_C3_1,    servoLeft,            tServoStandard)
@@ -27,7 +27,12 @@
 #include "JoystickDriver.c"  //Include file to "handle" the Bluetooth messages.
 
 #define JOYSTICK_MIN 10
+#define SERVO_CHANGE_RATE 10
 
+// Keep track of where we want the servo to be.
+int servoTargetPosition = 0;
+// How far do we move the servo when a button is pressed.
+int servoIncrement = 15;
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                                    initializeRobot
@@ -49,15 +54,36 @@ void initializeRobot()
 	SensorType[S3] = sensorNone;
 	SensorType[S4] = sensorNone;
 
+	//servoChangeRate[servoLeft] = SERVO_CHANGE_RATE;
+	//servoChangeRate[servoRight] = SERVO_CHANGE_RATE;
+	//servo[servoLeft] = 0;
+	//servo[servoRight] = 0;
 	return;
 }
 
 void moveServos()
 {
-	int button5 = joy1Btn(5);
-	int button7 = joy1Btn(7);
-	int buttonUp = button5;
-	int buttonDown = button7;
+	// Keep the servo within its range.
+	if (servoTargetPosition < 0)
+	{
+		servoTargetPosition = 0;
+	}
+	if (servoTargetPosition > 255)
+	{
+		servoTargetPosition =255;
+	}
+	servo[servoLeft] = servoTargetPosition;
+	servo[servoRight] = servoTargetPosition;
+	// Give it time to move.
+	wait10Msec(2);
+}
+
+// Find out what the buttons are requesting.
+// Adjust the global variable servoTargetPosition.
+void getServoRequest()
+{
+	int buttonUp = joy1Btn(5);
+	int buttonDown = joy1Btn(7);
 
 	if ((buttonUp + buttonDown) == 0)
 	{
@@ -66,15 +92,15 @@ void moveServos()
 
 	if (buttonUp == 1)
 	{
-		servo[servoLeft] += 15;
-		servo[servoRight] += 15;
+		servoTargetPosition += servoIncrement;
 	}
 
 	if (buttonDown == 1)
 	{
-		servo[servoLeft] -= 5;
-		servo[servoRight] -= 5;
+		servoTargetPosition -= servoIncrement;
 	}
+
+	moveServos();
 }
 
 // Operate the two drive motors
@@ -105,7 +131,7 @@ void driveMotors()
 				joyRight = -1*pow(1+.056,abs(joyRight));
 		}
 
-		motor[motorL] = (joyLeft)*-100/127;
+		motor[motorL] = (joyLeft)*100/127;
 		motor[motorR] = (joyRight)*100/127;
 	}
 	else
@@ -167,17 +193,17 @@ task main()
 
 		getJoystickSettings(joystick);   // Obtain current game controller settings
 
-		nxtDisplayString(0, "joy1_x1: %d", joystick.joy1_x1);
-		nxtDisplayString(1, "joy1_y1: %d", joystick.joy1_y1);
-		nxtDisplayString(2, "joy1_x2: %d", joystick.joy1_x2);
-		nxtDisplayString(3, "joy1_y2: %d", joystick.joy1_y2);
-		nxtDisplayString(4, "Buttons: %d", joystick.joy1_Buttons);
-		nxtDisplayString(5, "TopHat:  %d", joystick.joy1_TopHat);
+		nxtDisplayString(0, "joy1_x1: %d ", joystick.joy1_x1);
+		nxtDisplayString(1, "joy1_y1: %d ", joystick.joy1_y1);
+		nxtDisplayString(2, "joy1_x2: %d ", joystick.joy1_x2);
+		nxtDisplayString(3, "joy1_y2: %d  ", joystick.joy1_y2);
+		nxtDisplayString(4, "Buttons: %d  ", joystick.joy1_Buttons);
+		nxtDisplayString(5, "TopHat:  %d  ", joystick.joy1_TopHat);
 
 		// Drive Motors
 		driveMotors();
 
-		// Servos
-		moveServos();
+		// Check servo movement requests.
+		getServoRequest();
 	}
 }

@@ -1,0 +1,1043 @@
+Declaration of Constants and Variables
+The statements below show the definitions of various constants and variables. Most are assigned a value in their declaration. 
+
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Define constants and variables to be used in the functions below
+4.//
+5.                                           // Internal constants used to write more readable code.
+6.const int RIGHTSIDE = 1;                   // Line following constants used to tell which side of line to follow
+7.const int MIDDLE = 0;                      //
+8.const int LEFTSIDE = -1;                   //
+9.const int STOPPED = 0;
+10.int FORWARD = 1;                           // General navigation used to keep track of which direction the robot is going
+11.int BACKWARD = -1;                         // These are declared as variables so they can be reversed for certain robot designs
+12.int mDir = FORWARD;                        // Orientation of the motors.  If motors are reversed,
+13.                                           //     the config function will change this value
+14.const int CLOCKWISE = 1;
+15.const int COUNTERCLOCKWISE = -1;
+16.int powerLevel = 0;                        // Level of power used by all motor actions
+17.int powerLevelRev = 0;                     // Level of power used by all Reverse motor actions
+18.int powerLevelAccessory = 20;              // Level of power used by the accessory motor
+19.int direction = STOPPED;                   // Initial direction of the robot is set to Stopped
+20.int sideOfLine = RIGHTSIDE;                // Initialize a variable to keep track of which side of the line the robot is following
+21.bool keepGoing = false;                    // Some functions allow for the robot to keep moving when true;
+22.                                           //    If false, robot will stop after each action
+23.int lineIsAtLevel = 20;                    // Percentage of light that is used to determine presence of a line.
+24.float motorError[] = {0, 0, 0};
+
+1.// There are 4 characteristics of the robot which are used in various move functions.
+2.// Each of the size characteristics are entered in milimeters (MM).
+3.// The four lines below are used only to declare these variables as Global.
+4.// Do not enter any values for these variables here.  The values to be used by the program are read
+5.// from the text file (mentioned earlier).  The file is read in the InitMove() function below.
+6.float centerOfWheelToCenterOfRobotMM = 0;  // Distance of each drive wheel to the center of the robot
+7.                                           // Be careful with tankbots.  This distance is to the sprockets, not the center of the tread.
+8.float wheelDiameterMM = 43.2;              // Self explanatory. Just look at the tire to see the diameter in MM.  Use a default of 43.2--that's the typical tire we use
+9.float wheelCircumferenceMM = 0;            // The computer will figure this one.
+10.float gearRatio = 1;                       // Used as a multiplier to figure out the number of degrees of rotation.
+
+
+Primitives
+Certain functions may perform very basic (primitive) operations and are often referred to in other programs/functions that follow. For this reason, primitive functions usually follow the first declaration of constants/variables. 
+
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Define Primitive functions that may be referenced elsewhere
+4.//
+5.void display(int lineNum, string *sgb) {    // Display a message on a certain line
+6.  nxtDisplayTextLine(lineNum, "%s", sgb);
+7.}
+8.void waitForOrangeButton() {
+9.  display(6,"*Press Orange Btn");          // Notify User
+10.  display(7,"* to continue.  *");
+11.  while(nNxtButtonPressed != kEnterButton) { // Wait Here
+12.    wait1Msec(10);
+13.  }
+14.  display(6,"                *");          // Clear the message
+15.  display(7,"*               *");
+16.}
+17.void wait(float time) {
+18.  wait1Msec(time * 1000);
+19.}
+20.void waitForTouchSensor() {
+21.  display(6,"*Press Touch Snsr");            // Notify User
+22.  display(7,"* to continue.  *");
+23.  while(SensorValue(touchSensor) == 0)
+24.  {     // Wait Here
+25.    wait1Msec(10);
+26.  }
+27.  display(6,"                *");          // Clear the message
+28.  display(7,"*               *");
+29.}
+
+
+Variables Defined Next to the Functions That Use Them
+While it is possible to declare all variables at the top of the file, it sometimes is easier to read and understand the program if variables are declared next to the functions that use them. 
+
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Variables used to Configure Robot Dimensions
+4.// Robot dimensions are stored in a text file on the NXT brick.  This allows for functions to be
+5.// developed independent of the physical characteristics of the Robot.  Thus, different robots
+6.// could use the same code as long as each robot's physical dimensions are stored in this file.
+7.// Define internal constants and temporary handles for the file processes.
+8. 
+9.const string sFileNameRD = "RobotDimensions.txt";
+10.TFileIOResult nIoResult;
+11.TFileHandle hFileHandle;
+12.int defaultFileSize = 40;  //  Only need space to store 4 Float values.  Each Float value uses 4 bytes.
+13.int nFileSize = defaultFileSize;  //  Only need space to store 4 Float values.  Each Float value uses 4 bytes.
+
+
+createRobotDimensionsConfig()
+This is an internal primitive function. It is not referenced by the programmer. Rather, there are one or more other functions that call this one. In this case, this function is called by startup() which is a function you include at the beginning of your RobotC programs. This function begins the process of initializing the robot and getting it ready for action. 
+
+
+Purpose
+The purpose of createRobotDimensionsConfig() is to create a text file that will contain the default dimensions of the robot. 
+
+Why store the dimensions of the robot's in a file? 
+Good question. The answer is: so you can write programs that do not have to specify the dimensions of the robot. If the dimensions of the robot are stored in a file on the robot itself, then the program will simply refer to those dimensions as needed. This saves you the trouble of constantly having to refer to them in your program.
+
+Where is this file that contains the robot's dimensions?
+The name of the file is defined in a variable above. The variable is labeled: sFileNameRD which is assigned the value: "RobotDimensions.txt"
+
+How is the file created?
+The file is created in the function below where it shows: OpenWrite( ... ). This tells the computer to open the file for "writing" and four floating point numbers are written to it. The file is closed and a sound is played when done. 
+What values are written to the file?
+•centerOfWheelToCenterOfRobotMM
+•wheelDiameterMM
+•wheelCircumference
+•gearRatio
+These four dimensions of the robot are assigned initial values before the file is written. The initial values should be the values for your team's robot that you are building for the season. This assumes that everyone's robot has the same dimensions. If your robot's dimensions differ from these, you can either update this numbers to reflect your robot's dimensions. Or, you can declare your robot's dimensions at the beginning of your program. 
+
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Functions used to Configure Robot Dimensions
+4.void createRobotDimensionsConfig(int MessageType) {
+5.  if(MessageType==1) {
+6.    int i;
+7.    display(0,"*****************");
+8.    display(2,"*Missing Config *");
+9.    display(3,"*file.  I will  *");
+10.    display(4,"*create default *");
+11.    display(5,"*file instead.  *");
+12.    display(6,"*Press Orange Btn");
+13.    display(7,"*to continue.   *");
+14.    while(nNxtButtonPressed != kEnterButton) {
+15.      for(i=1;i<80;i++) { wait10Msec(1);
+16.        if(i<40) {
+17.          display(1,"*    WARNING    *");
+18.        } else {
+19.          display(1,"*               *");
+20.        }
+21.        if(nNxtButtonPressed == kEnterButton) break;
+22.      }
+23.    }
+24.  }
+25.  CloseAllHandles(nIoResult);
+26.  wait1Msec(500);
+27.  // You can edit the values for the next two variables.
+28.  // Please note:  the values must be entered in terms of millimeters.
+29.  float centerOfWheelToCenterOfRobotMM = 45.0;
+30.  float wheelDiameterMM = 56.0;
+31.  //
+32.  // Get the Wheel's circumference
+33.  float wheelCircumference = wheelDiameterMM * PI;  // Formula.  NOT changeable.
+34.  //
+35.  // If no gears are used, then the gear ratio should be "(float) 1 / 1"
+36.  float gearRatio = 1.0;
+37.  // gearRatio = (float) 24 / 40;   (Example of two gears)
+38.  // Format for the gear ratio is:
+39.  //   If 2 gears:  (Gear that connects to the wheel) / (gear that connects to the motor)
+40.  //   If 3 gears:  a / b / c
+41.  //      where a = the gear that connects to the wheel
+42.  //            c = the gear that connects to the motor
+43.  //            b = the gear in the middle
+44.  // In general, start with the gear at the wheel and divide it by each gear
+45.  // in sequential order as you get closer to the gear connected to the motor
+46. 
+47.  // Do not change the lines below
+48.  Delete(sFileNameRD, nIoResult);
+49.  hFileHandle = 0;  nFileSize = defaultFileSize;
+50.  OpenWrite( hFileHandle, nIoResult, sFileNameRD, nFileSize);
+51. 	WriteFloat(hFileHandle, nIoResult, centerOfWheelToCenterOfRobotMM);
+52. 	WriteFloat(hFileHandle, nIoResult, wheelDiameterMM);
+53. 	WriteFloat(hFileHandle, nIoResult, wheelCircumference);
+54. 	WriteFloat(hFileHandle, nIoResult, gearRatio);
+55.  Close(hFileHandle, nIoResult);
+56.	PlaySoundFile("OK.rso");
+57.}
+
+
+Functions that Allow You to Change the Default Values
+When the program is started, a set of default values for the robot's dimensions are retrieved. If your robot differs from these default values, you can update the internal variables to reflect your robot's true dimensions through the use of these functions. 
+
+1.void configureRobotDimensions(float WheelToCenterOfRobot, float WheelDiameter, float DriveGearRatio, int RobotForwardIs ) {
+2.  centerOfWheelToCenterOfRobotMM = WheelToCenterOfRobot;
+3.  wheelDiameterMM = WheelDiameter;
+4.  wheelCircumferenceMM = wheelDiameterMM * PI;  // Formula.  NOT changeable.
+5.  gearRatio = DriveGearRatio;
+6.  mDir=RobotForwardIs;
+7.}
+8.void configureWheelToCenterOfRobotMM(float WheelToCenterOfRobot) {
+9.  centerOfWheelToCenterOfRobotMM = WheelToCenterOfRobot;
+10.}
+11.void configureWheelDiameterMM(float WheelDiameter) {
+12.  wheelDiameterMM = WheelDiameter;
+13.  wheelCircumferenceMM = wheelDiameterMM * PI;  // Formula.  NOT changeable.
+14.}
+15. 
+16.                                           // Overload the Configuration function for default motor orientation
+17.void configureRobotDimensions(float WheelToCenterOfRobot, float WheelDiameter, float DriveGearRatio) {
+18.  configureRobotDimensions(WheelToCenterOfRobot, WheelDiameter, DriveGearRatio, FORWARD);
+19.}
+20.                                           // Overload function for default gear ratio and motor orientation
+21.void configureRobotDimensions(float WheelToCenterOfRobot, float WheelDiameter) {
+22.  configureRobotDimensions(WheelToCenterOfRobot, WheelDiameter, 1.0, FORWARD);
+23.}
+
+
+Function Overloading
+Did you notice above that there appeared to be multiple definitions of the same function: configureRobotDimensions()
+Why was that? Why wasn't one definition good enough?
+
+The "compiler" looks at your program, and based on how you use the function (with one, two, three, or four parameters) it will then choose from the list of defined variations of that function the one that best matches how you used it in your program.
+
+So, for example, you can use the following in your program:
+configureRobotDimensions(85.00, 43.2)
+and
+configureRobotDimensions(85.00, 43.2, 2.5)
+
+The computer will know that the second one is the one where the GearRatio was specified and it will use that function to set the dimensions including the GearRaio. 
+
+
+Working With Light Sensors
+Your robot may need to use light sensors for line following. The actual light sensor itself returns a raw value (ranges between 0 and 1000). This number may not be very useful if it the conditions of the environment change from one setting to another. For example, if your practice (training) area uses florescent lighting in a low hung ceiling, your light sensors may give certain values. These values may differ if in the competion gymnasium the lighting is provided by high voltage arc lamps. For this reason, it may be a good idea to calibrate the light sensors for the environment they will be used in. Each time the environment changes, you would need to re-calibrate the light sensors. 
+
+1.////////////////////////////////////////////////////////////////////////////////////
+2.//
+3.// Define the variables and constants to be used with LineFollowing.
+4.//
+5.// This robot will have two light sensors.  Each sensor has a slightly different range.
+6.// Some of these differences can be as much as 5%.  To account for the differences, a separate
+7.// set of ranges is created for each light sensor.
+8.const string sFileNameLR = "LightRange.txt";
+9.long tLowLight = 300;
+10.long tHighLight = 600;
+11.long tLowLight2 = 300;
+12.long tHighLight2 = 600;
+13.//
+14.bool IsFollowingLine = false;              // Some of the Stop functions will need to know if the robot is following a line or not.
+15.                                           // If the robot is following a line, there is extra code in the While() loop in the
+16.                                           // stopOnTouch(), stopAfterDistance(), and stopIfCloseTo()
+17.//
+18.// Declare Internal Methods to be performed for working with lines.
+19.//
+20.// These two functions are generally not referenced by the programmer.
+21.// They are for internal purposes in dealing with the output of the light sensors
+22.float getLightPortion() {
+23.  float result;
+24.  long numerator, denominator;
+25.  if((long) SensorRaw[lightSensorB] > tHighLight2) { tHighLight2 = (long) SensorRaw[lightSensorB]; }
+26.  if((long) SensorRaw[lightSensorB] < tLowLight2) { tLowLight2 = (long) SensorRaw[lightSensorB]; }
+27.  if((long) SensorRaw[lightSensorA] > tHighLight) { tHighLight = (long) SensorRaw[lightSensorA]; }
+28.  if((long) SensorRaw[lightSensorA] < tLowLight) { tLowLight = (long) SensorRaw[lightSensorA]; }
+29.  if(direction == BACKWARD) {
+30.    numerator = (long) SensorRaw[lightSensorB] - tLowLight2;
+31.    denominator = tHighLight2 - tLowLight2;
+32.  } else {
+33.    numerator = (long) SensorRaw[lightSensorA] - tLowLight;
+34.    denominator = tHighLight - tLowLight;
+35.  }
+36.  result = (float)  numerator / denominator;
+37.  if(result < 0) { result=0; }
+38.  if(result > 1) { result=1; }
+39.  return result;
+40.}
+41.float getLightPercent() { return 100 * getLightPortion(); }
+42.float getLightDiffPortion() {
+43.  float result;
+44.  long numerator1;
+45.  long numerator2;
+46.  long numerator;
+47.  numerator1 = (float) (SensorRaw[lightSensorB] - tLowLight) / (tHighLight - tLowLight) * 100;
+48.  numerator2 = (float) (SensorRaw[lightSensorA] - tLowLight2) / (tHighLight2 - tLowLight2) * 100;
+49.  numerator = (float) numerator1 - numerator2 + 100;
+50.  result = (float)  numerator / 200;
+51.  return result;
+52.}
+
+
+PID Controller
+The PID controller is implemented using two separate functions. One function performs the PID function (called: FollowLinePID) while the other function setups the main variables to be used (called: followLine).
+
+The followLine function takes one parameter to specify the side of the line to follow (LEFT or RIGHT). Notice how the followLine function does not include any parameters for distance or power level. This is because there are other functions which the robot should use when determining distances. If you are following a line and you want the robot to stop after 4 inches, then you would get the robot to follow the line using the followLine(); function and then use the command stopAfterDistance(4);.
+
+Each function in the library that checks for distance travelled or for distance to an object will also utilize the FollowLinePID() function if the robot happens to be following a line at the time. 
+
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Various LineFollowing Functions
+4.//
+5.// This is the PID controller part of the line following function.
+6.// This part of the function is referenced in the While() loops contained in the various Stop functions.
+7.// The basic process is to initialize the LineFollowing function (above) and then let the other functions
+8.// reference the PID controller (below).
+9.void FollowLinePID() {
+10.  float dFactor = 1;                       // Used as a multiplier to change the power to the motors from + to - if going in reverse.
+11.  if(direction == BACKWARD) { dFactor = -1;}// If not going forward, then you must be in reverse.
+12.  float variablePower = powerLevel * 0.75; // variablePower should be a portion of the default powerLevel.
+13.  float Kp = 0;                            // Using the "PID minus the ID" formula
+14.  Kp = ((getLightPercent() - 50) / 50) * variablePower; // Calculates Kp as a percentage of the variablePower amount.
+15.  if(sideOfLine == RIGHTSIDE) { Kp *= -1; }             // Switch the sign of Kp if you want to follow the other side of the line.
+16.  motor[motorB] = dFactor * (powerLevel + Kp) * mDir;  // Add Kp to motor1 whether going forward or backward
+17.  motor[motorC] = dFactor * (powerLevel - Kp) * mDir;  // Subtract Kp from motor2 whether going forward or backward
+18.}
+
+1.// FollowLine is a User accessed function for initializing the robot to follow a line.
+2.// This function has a few parameters that are set when you begin to follow the line; a type of initialization process.
+3.// Once initialized, the subsequent checks are not needed.  The "IsFollowingLine" helps to coordinate the different types
+4.// of moving with the different forms of the Stop function.  In this way, each Stop function is able to determine which
+5.// type of moving needs to take place.
+6.void followLine(int thisSide) {
+7.  sideOfLine = thisSide;                   // Store which side of the line has been selected.  This will
+8.                                           // be needed in the Stop functions that call FollowLine()
+9.  IsFollowingLine = true;                  // This variable is used for the While() loops in the Stop functions.
+10.  nSyncedMotors = synchNone;               // You must De-sync the motors.
+11.  if(direction == STOPPED) { direction = FORWARD; } // If you were stopped, then let's go forward.
+12.  if(direction == FORWARD) {               // Once you are already following the line, then you don't have to check this again
+13.    if(SensorType[S3] == sensorLightInactive) { SensorType[S3] = sensorLightActive; } // Make sure you turn the light 'on'
+14.    SensorType[S2] = sensorLightInactive;
+15.  } else {
+16.    if(SensorType[S2] == sensorLightInactive) { SensorType[S2] = sensorLightActive; } // Make sure you turn the light 'on'
+17.    SensorType[S3] = sensorLightInactive;
+18.  }
+19.  FollowLinePID();
+20.}
+
+
+Moving
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Primitive Functions to get the robot moving
+4.//
+5.void setPowerLevel(int power) {
+6.  powerLevel = power;                      // Set the global variable to the value that was passed
+7.  powerLevelRev = -power;                  // Set the reverse power variable to the negative of the value that was passed
+8.}
+9.void setAccessoryPowerLevel(int power) {
+10.  powerLevelAccessory = power;             // Set the global variable for the Accessory Power Level
+11.}
+12.void setDefaultSpeed(int power) { setPowerLevel(power); }
+13. 
+14.void beginDrivingForward(int tempPower) {
+15.  direction = FORWARD;                     // Set the direction so other functions know which way we are going
+16.  IsFollowingLine = false;                 // Just driving forward is not following any line
+17.  nSyncedMotors = synchBC;                 // motor B is the master, motor C is the follower
+18.                                           // Only the master motor needs power since the other moter is synched to the master
+19.  motor[motorB] = direction * tempPower * mDir;
+20.}
+21. 
+22.void beginDrivingBackward(int tempPower) {
+23.  direction = BACKWARD;                    // Set the direction so other functions know which way we are going
+24.  IsFollowingLine = false;                 // Just driving backward is not following any lines
+25.  nSyncedMotors = synchBC;                 // motor B is the master, motor C is the follower
+26.                                           // Only the master motor needs power since the other moter is synched to the master
+27.  motor[motorB] = direction * tempPower * mDir;
+28.}
+29. 
+30.void beginFollowingWall(int thisSide, int tempPower) {
+31.  if(direction == STOPPED) beginDrivingForward(tempPower);
+32.  IsFollowingLine = false;                 // Just driving forward is not following any line
+33.  nSyncedMotors = synchBC;                 // motor B is the master, motor C is the follower
+34.                                           // Only the master motor needs power since the other moter is synched to the master
+35.  nSyncedTurnRatio = thisSide * 97;        // One Motor will be 90% the value of the other
+36.  motor[motorB] = direction * tempPower * mDir;
+37.}
+
+
+Turning
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Various Turning Functions
+4.//
+5.// There are three types of robot turns:
+6.//    1) Point Turn - turn in place.  Wheels move in opposite directions
+7.//    2) Swing Turn - A small radius turn where only one wheel moves.  Other is stopped.
+8.//    3) Gradual Turn - A large radius turn with both wheels moving--one more than the other.
+9.//
+
+1.void pointTurnClockwise(float turnDegrees, int tempPower) {
+2.  float turningCircumferenceMM = (2 * centerOfWheelToCenterOfRobotMM * PI);
+3.  float wheelRotationsPerRobotTurn = turningCircumferenceMM / wheelCircumferenceMM;
+4.  float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
+5.  float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
+6.  targetDegrees = targetDegrees + nMotorEncoder[motorB];
+7.  nSyncedMotors = synchBC;                 //motor B is the master, motor C is the slave
+8.  if(keepGoing) {
+9.    bFloatDuringInactiveMotorPWM = true;   // coast or float
+10.  } else {
+11.    bFloatDuringInactiveMotorPWM = false;  // brake
+12.  }
+13.  nSyncedTurnRatio = -100;                 // motors move in opposite directions of one another
+14.  motor[motorB] = tempPower;               // turns the motor on at specified power
+15.  while(nMotorEncoder[motorB] <= targetDegrees) { }
+16.  if(!keepGoing) motor[motorB] = 0;        // turn the motor off.
+17.  bFloatDuringInactiveMotorPWM = false;    // brake
+18.  IsFollowingLine = false;                 // Turning means you are not following any line
+19.}
+
+1.void swingTurnClockwise(float turnDegrees, int tempPower) {
+2.  float turningCircumferenceMM = (4 * centerOfWheelToCenterOfRobotMM * PI);
+3.  float wheelRotationsPerRobotTurn = turningCircumferenceMM / wheelCircumferenceMM;
+4.  float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
+5.  float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
+6. 
+7.  if(direction == STOPPED) beginDrivingForward(powerLevel);
+8.  if(direction == FORWARD) {
+9.    targetDegrees = targetDegrees + nMotorEncoder[motorB];
+10.    nSyncedMotors = synchNone;             // de-synch the motors
+11.    if(keepGoing) {
+12.      bFloatDuringInactiveMotorPWM = true; // coast or float
+13.    } else {
+14.      bFloatDuringInactiveMotorPWM = false;// brake
+15.    }
+16.    motor[motorB] = tempPower;             // turns the motor on at specified power
+17.    while(nMotorEncoder[motorB] <= targetDegrees) { }
+18.    if(!keepGoing) motor[motorB] = 0;      // turn the motor off.
+19.  } else {
+20.    targetDegrees = nMotorEncoder[motorC] - targetDegrees;
+21.    nSyncedMotors = synchNone;             // de-synch the motors
+22.    if(keepGoing) {
+23.      bFloatDuringInactiveMotorPWM = true; // coast or float
+24.    } else {
+25.      bFloatDuringInactiveMotorPWM = false;// brake
+26.    }
+27.    motor[motorC] = tempPower;             // turns the motor on at specified power
+28.    while(nMotorEncoder[motorC] <= targetDegrees) { }
+29.    if(!keepGoing) motor[motorC] = 0;      // turn the motor off.
+30.  }
+31.  bFloatDuringInactiveMotorPWM = false;    // brake
+32.  IsFollowingLine = false;                 // Turning means you are not following any line
+33.}
+
+1.void gradualTurnClockwise(float turnDegrees, float turnRadiusIN, int tempPower) {
+2.  float innerTurnRadius = (turnRadiusIN * 25.4) - centerOfWheelToCenterOfRobotMM;
+3.    // Convert inches to millimeters by multiplying by 25.4
+4.  if(innerTurnRadius < 0) { innerTurnRadius = 0; }
+5.  float outerTurnRadius = (turnRadiusIN * 25.4) + centerOfWheelToCenterOfRobotMM;
+6.  float outerTurningCircumferenceMM = (2 * outerTurnRadius * PI);
+7.  float wheelRotationsPerRobotTurn = outerTurningCircumferenceMM / wheelCircumferenceMM;
+8.  float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
+9.  float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
+10.  float turnRatio;
+11.  if(keepGoing) {
+12.    bFloatDuringInactiveMotorPWM = true;   // coast or float
+13.  } else {
+14.    bFloatDuringInactiveMotorPWM = false;  // brake
+15.  }
+16.  turnRatio = innerTurnRadius / outerTurnRadius * 100.0;
+17.    // The turn ratio represents a percentage that the slave motor will turn in relation to the master
+18.    // Because we're turning clockwise, B is the master and the turn ratio is the ratio of inner/outer.
+19.  if(direction == STOPPED) beginDrivingForward(tempPower);
+20.  if(direction == FORWARD) {
+21.    targetDegrees = nMotorEncoder[motorB] + targetDegrees;
+22.    nSyncedMotors = synchBC;               // motor B is the master, motor C is the slave
+23.    nSyncedTurnRatio = turnRatio;          // turn ratio is set after the motors are synced
+24.    motor[motorB] = tempPower;             // turns the motor on at specified power
+25.    while(nMotorEncoder[motorB] <= targetDegrees) { } //continue until the Target position is reached
+26.    if(!keepGoing) motor[motorB] = 0;      // turn the motor off.
+27.  } else {
+28.    targetDegrees = nMotorEncoder[motorC] - targetDegrees;
+29.    nSyncedMotors = synchCB;               // motor B is the master, motor C is the slave
+30.    nSyncedTurnRatio = turnRatio;
+31.    motor[motorC] = -1 * tempPower;        // turns the motor on at specified power
+32.    while(nMotorEncoder[motorC] >= targetDegrees) { } //continue until the Target position is reached
+33.    if(!keepGoing) motor[motorC] = 0;      // turn the motor off.
+34.  }
+35.  bFloatDuringInactiveMotorPWM = false;    // brake
+36.  IsFollowingLine = false;                 // Turning means you are not following any line
+37.}
+
+1.void pointTurnCounterClockwise(float turnDegrees, int tempPower) {
+2.  float turningCircumferenceMM = (2 * centerOfWheelToCenterOfRobotMM * PI);
+3.  float wheelRotationsPerRobotTurn = turningCircumferenceMM / wheelCircumferenceMM;
+4.  float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
+5.  float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
+6.  targetDegrees = targetDegrees + nMotorEncoder[motorC];
+7.  nSyncedMotors = synchCB;                 //motor C is the master, motor B is the slave
+8.  if(keepGoing) {
+9.    bFloatDuringInactiveMotorPWM = true;   // coast or float
+10.  } else {
+11.    bFloatDuringInactiveMotorPWM = false;  // brake
+12.  }
+13.  nSyncedTurnRatio = -100;                 //motors move in opposite directions of one another
+14.  motor[motorC] = tempPower;               //turns the motor on at specified power
+15.  while(nMotorEncoder[motorC] <= targetDegrees) { }
+16.    //continue to power motorC until the motor nMotorEncoderTarget position is reached
+17.  if(!keepGoing) motor[motorC] = 0;        // turn the motor off.
+18.  bFloatDuringInactiveMotorPWM = false;    // brake
+19.  IsFollowingLine = false;                 // Turning means you are not following any line
+20.}
+
+1.void swingTurnCounterClockwise(float turnDegrees, int tempPower) {
+2.  float turningCircumferenceMM = (4 * centerOfWheelToCenterOfRobotMM * PI);
+3.  float wheelRotationsPerRobotTurn = turningCircumferenceMM / wheelCircumferenceMM;
+4.  float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
+5.  float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
+6. 
+7.  if(direction == STOPPED) beginDrivingForward(powerLevel);
+8.  if(direction == FORWARD) {
+9.    targetDegrees = targetDegrees + nMotorEncoder[motorC];
+10.    nSyncedMotors = synchNone;             // de-synch the motors
+11.    if(keepGoing) {
+12.      bFloatDuringInactiveMotorPWM = true; // coast or float
+13.    } else {
+14.      bFloatDuringInactiveMotorPWM = false;// brake
+15.    }
+16.    motor[motorC] = tempPower;             // turns the motor on at specified power
+17.    while(nMotorEncoder[motorC] <= targetDegrees) { }
+18.    if(!keepGoing) motor[motorC] = 0;      // turn the motor off.
+19.  } else {
+20.    targetDegrees = nMotorEncoder[motorB] - targetDegrees;
+21.    nSyncedMotors = synchNone;             // de-synch the motors
+22.    if(keepGoing) {
+23.      bFloatDuringInactiveMotorPWM = true; // coast or float
+24.    } else {
+25.      bFloatDuringInactiveMotorPWM = false;// brake
+26.    }
+27.    motor[motorB] = tempPower;             // turns the motor on at specified power
+28.    while(nMotorEncoder[motorB] <= targetDegrees) { }
+29.    if(!keepGoing) motor[motorB] = 0;      // turn the motor off.
+30.  }
+31.  bFloatDuringInactiveMotorPWM = false;    // brake
+32.  IsFollowingLine = false;                 // Turning means you are not following any line
+33.}
+
+1.void gradualTurnCounterClockwise(float turnDegrees, float turnRadiusIN, int tempPower) {
+2.  float innerTurnRadius = (turnRadiusIN * 25.4) - centerOfWheelToCenterOfRobotMM;
+3.    // Convert inches to millimeters by multiplying by 25.4
+4.  if(innerTurnRadius < 0) { innerTurnRadius = 0; }
+5.  float outerTurnRadius = (turnRadiusIN * 25.4) + centerOfWheelToCenterOfRobotMM;
+6.  float outerTurningCircumferenceMM = (2 * outerTurnRadius * PI);
+7.  float wheelRotationsPerRobotTurn = outerTurningCircumferenceMM / wheelCircumferenceMM;
+8.  float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
+9.  float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
+10.  float turnRatio;
+11.  if(keepGoing) {
+12.    bFloatDuringInactiveMotorPWM = true;   // coast or float
+13.  } else {
+14.    bFloatDuringInactiveMotorPWM = false;  // brake
+15.  }
+16.  turnRatio = innerTurnRadius / outerTurnRadius * 100.0;
+17.    // The turn ratio represents a percentage that the slave motor will turn in relation to the master
+18.    // Because we're turning clockwise, B is the master and the turn ratio is the ratio of inner/outer.
+19.  if(direction == STOPPED) beginDrivingForward(tempPower);
+20.  if(direction == FORWARD) {
+21.    targetDegrees = nMotorEncoder[motorC] + targetDegrees;
+22.    nSyncedMotors = synchCB;               // motor C is the master, motor B is the slave
+23.    nSyncedTurnRatio = turnRatio;          // turn ratio is set after the motors are synced
+24.    motor[motorC] = tempPower;             // turns the motor on at specified power
+25.    while(nMotorEncoder[motorC] <= targetDegrees) { } // until the Target position is reached
+26.    if(!keepGoing) motor[motorC] = 0;      // turn the motor off.
+27.  } else {
+28.    targetDegrees = nMotorEncoder[motorB] - targetDegrees;
+29.    nSyncedMotors = synchBC;               // motor C is the master, motor B is the slave
+30.    nSyncedTurnRatio = turnRatio;          // turn ratio is set after the motors are synced
+31.    motor[motorB] = -1 * tempPower;        // turns the motor on at specified power
+32.    while(nMotorEncoder[motorB] >= targetDegrees) { } // until the motor Target position is reached
+33.    if(!keepGoing) motor[motorB] = 0;      // turn the motor off.
+34.  }
+35.  bFloatDuringInactiveMotorPWM = false;    // brake
+36.  IsFollowingLine = false;                 // Turning means you are not following any line
+37.}
+
+1.void Motor(int thisMotor, float turnDegrees, int dirRotation) {
+2.  nSyncedMotors = synchNone;               // No motor synch
+3.  bFloatDuringInactiveMotorPWM = false;    // Enable braking
+4.  float targetDegrees;
+5.  if(turnDegrees < 0) {                    // Turning a negative number of degrees?
+6.  	dirRotation *= -1;                     // Reverse the direction
+7.  	turnDegrees = abs(turnDegrees);        // Make sure you are turning a positive number of degrees in the new direction
+8.  }
+9.  //float initialMotorEncoderValue = nMotorEncoder[thisMotor];
+10.  if(dirRotation == BACKWARD) {
+11.    targetDegrees = ((nMotorEncoder[thisMotor] - turnDegrees) - motorError[thisMotor]);
+12.    if(thisMotor == (int) motorA) {
+13.    	motor[thisMotor] = powerLevelAccessory * -1;
+14.    } else {
+15.      motor[thisMotor] = powerLevelRev *mDir;//turns the motor on at specified power
+16.    }
+17.    nMotorEncoderTarget[thisMotor] = targetDegrees; //powerLevelrget
+18.    while(nMotorEncoder[thisMotor] >= targetDegrees - ((float)powerLevelRev * ((float) abs(powerLevelRev)/150.0))) { }
+19.  } else {
+20.    targetDegrees = ((turnDegrees + nMotorEncoder[thisMotor]) - motorError[thisMotor]);
+21.    if(thisMotor == (int) motorA) {
+22.    	motor[thisMotor] = powerLevelAccessory;
+23.    } else {
+24.       motor[thisMotor] = powerLevel * mDir;  //turns the motor on at specified power
+25.    }
+26.    nMotorEncoderTarget[thisMotor] = targetDegrees; // sets a target
+27.    while(nMotorEncoder[thisMotor] <= targetDegrees - ((float)powerLevel * ((float) abs(powerLevel)/150.0))) { }
+28.  }
+29.  motor[thisMotor] = 0;                    // turns the motor on at specified power
+30.  wait10Msec(100);                         // Pause a little to make sure motor has stopped.
+31.  bFloatDuringInactiveMotorPWM = true;     // Enable coast or float in case the attachment is stuck or needs to rest
+32.  motor[thisMotor] = 0;
+33.  motorError[thisMotor] = nMotorEncoder[thisMotor] - targetDegrees;
+34.  wait10Msec(2);
+35.}
+
+
+Stopping
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Various Stop Functions
+4.//
+5.void powerZero() {
+6.  motor[motorA] = 0;                       // turn the motor off.
+7.  motor[motorB] = 0;                       // turn the motor off.
+8.  motor[motorC] = 0;                       // turn the motor off.
+9.}
+10.void stopMoving() {
+11.  if(keepGoing) return;
+12.  bFloatDuringInactiveMotorPWM = false;    // brake
+13.  nSyncedMotors = synchNone;               // De-sync the motors.
+14.  powerZero();
+15.  direction = STOPPED;
+16.  IsFollowingLine = false;                 // Stopping means you are not following any line
+17.}
+18. 
+19.void untilLine() {
+20.  if(direction == STOPPED) beginDrivingForward(powerLevel);
+21.  if(direction == FORWARD) {
+22.    SensorType[S3] = sensorLightActive;    // Make sure you turn the light 'on'
+23.  } else {
+24.    SensorType[S2] = sensorLightActive;    // Make sure you turn the light 'on'
+25.  }
+26.  // Enter a loop and stay there as long as the light value is greater than % in variable lineIsAtLevel
+27.  while(getLightPercent() > lineIsAtLevel) { }
+28.  stopMoving();                            // Stop moving now
+29.  SensorType[S3] = sensorLightInactive;    // Go ahead and turn the light 'off'
+30.  SensorType[S2] = sensorLightInactive;    // Go ahead and turn the light 'off'
+31.}
+32.void stopOnLine() { untilLine(); stopMoving(); }
+
+
+Color Sensor
+1.bool robotSees(int seesColor) {
+2.  SensorType[colorSensor] = sensorCOLORFULL;
+3.  wait(1);
+4.	if(SensorValue[colorSensor] != seesColor) {
+5.    SensorType[colorSensor] = sensorCOLORNONE;
+6.	  return false;
+7.	} else {
+8.    SensorType[colorSensor] = sensorCOLORNONE;
+9.	  return true;
+10.	}
+11.}
+12.void untilRobotSees(int seesColor) {
+13.  SensorType[colorSensor] = sensorCOLORFULL;
+14.  int oldDirection = direction;
+15.  bool oldIsFollowingLine = IsFollowingLine;
+16.  do {
+17.	  while(SensorValue[colorSensor] != seesColor) {
+18.	    if(direction == STOPPED) beginDrivingForward(powerLevel);
+19.	    if(direction == FORWARD) {             // If going forward, then check rotation sensor <= target
+20.	      if(IsFollowingLine) { FollowLinePID(); }
+21.	    } else {                               // If going backward, then check rotation sensor >= target
+22.	      if(IsFollowingLine) { FollowLinePID(); }
+23.	    }
+24.	  }
+25.	  stopMoving();
+26.	  wait(1);
+27.	  SensorType[colorSensor] = sensorCOLORFULL;
+28.	  wait(1);
+29.	  if(SensorValue[colorSensor] != seesColor) {
+30.  	  if(oldDirection== BACKWARD) { beginDrivingBackward(powerLevel); } else { beginDrivingForward(powerLevel); }
+31.	    IsFollowingLine = oldIsFollowingLine;    // Re-initialize this because the beginDriving functions will change it
+32.	    if(IsFollowingLine) { followLine(sideOfLine); }
+33.	  }
+34.    display(6,"                *");          // Clear the message
+35.    display(7,"*               *");
+36.    display(8,"                *");          // Clear the message
+37.	  nxtDisplayTextLine(6, "  %d  ", SensorValue[colorSensor]);
+38.  } while(SensorValue[colorSensor] != seesColor);
+39.  SensorType[colorSensor] = sensorCOLORNONE;
+40.}
+
+1.void untilRobotSees(int seesColor, float inches) {
+2.  SensorType[colorSensor] = sensorCOLORFULL;
+3.  int oldDirection = direction;
+4.  long rotationSensor = 0;
+5.  float targetDegrees;
+6.  rotationSensor = nMotorEncoder[motorB];
+7.                                           // WheelCircumferenceMM is in millimeters, so, multiply inches by 25.4 to convert to mm.
+8.  targetDegrees = 360 * inches * 25.4 / wheelCircumferenceMM * gearRatio;  // Num of Degrees to turn
+9.  bool oldIsFollowingLine = IsFollowingLine;
+10.  bFloatDuringInactiveMotorPWM = false;    // brake
+11.  targetDegrees *= direction;
+12.  targetDegrees += rotationSensor;         // Add these degrees to the current rotation sensor
+13.  nMotorEncoderTarget[motorB] = targetDegrees; // This is the new target degree to achieve
+14.  do {
+15.	  while(SensorValue[colorSensor] != seesColor && nMotorRunState[motorB] != runStateIdle && nMotorRunState[motorB] != runStateHoldPosition && nMotorEncoder[motorB] <= targetDegrees) {
+16.	    if(direction == STOPPED) beginDrivingForward(powerLevel);
+17.	    if(direction == FORWARD) {             // If going forward, then check rotation sensor <= target
+18.	      if(IsFollowingLine) { FollowLinePID(); }
+19.	    } else {                               // If going backward, then check rotation sensor >= target
+20.	      if(IsFollowingLine) { FollowLinePID(); }
+21.	    }
+22.	  }
+23.	  powerZero();
+24.	  if(nMotorEncoder[motorB] > targetDegrees) { break; }
+25.	  wait(1);
+26.	  SensorType[colorSensor] = sensorCOLORFULL;
+27.	  wait(1);
+28.	  if(SensorValue[colorSensor] != seesColor) {
+29.  	  if(oldDirection== BACKWARD) { beginDrivingBackward(powerLevel); } else { beginDrivingForward(powerLevel); }
+30.	    IsFollowingLine = oldIsFollowingLine;  // Re-initialize this because the beginDriving functions will change it
+31.	    if(IsFollowingLine) { followLine(sideOfLine); }
+32.	    wait(1);
+33.	  }
+34.    display(6,"                *");          // Clear the message
+35.    display(7,"*               *");
+36.    display(8,"                *");          // Clear the message
+37.	  nxtDisplayTextLine(6, "  %d  ", SensorValue[colorSensor]);
+38.  } while(SensorValue[colorSensor] != seesColor && nMotorRunState[motorB] != runStateIdle && nMotorRunState[motorB] != runStateHoldPosition && nMotorEncoder[motorB] <= targetDegrees);
+39.  SensorType[colorSensor] = sensorCOLORNONE;
+40.}
+
+1.void stopIfRobotSees(int seesColor) { untilRobotSees(seesColor); stopMoving(); }
+2. 
+3.short sonarSensor;
+4.void untilSonarLessThan(float distance_in_inches) {
+5.  float distance_in_cm; distance_in_cm = distance_in_inches * 2.54;
+6.  while(SensorValue((short) sonarSensor) > distance_in_cm) {
+7.    if(direction == STOPPED) beginDrivingForward(powerLevel);
+8.    if(direction == FORWARD) {             // If going forward, then check rotation sensor <= target
+9.      if(IsFollowingLine) { FollowLinePID(); }
+10.    } else {                               // If going backward, then check rotation sensor >= target
+11.      if(IsFollowingLine) { FollowLinePID(); }
+12.    }
+13.  }
+14.}
+15.void stopIfSonarLessThan(float distance_in_inches) { untilSonarLessThan(distance_in_inches); stopMoving(); }
+16. 
+17.void untilSonarGreaterThan(float distance_in_inches) {
+18.  float distance_in_cm; distance_in_cm = distance_in_inches * 2.54;
+19.  while(SensorValue(sonarSensor) <= distance_in_cm) {
+20.    if(IsFollowingLine) { FollowLinePID(); }  // If going forward, then check rotation sensor
+21.  }
+22.}
+23. 
+24.void untilDistance(float inches) {
+25.  long rotationSensor = 0;
+26.  float targetDegrees;
+27.  rotationSensor = nMotorEncoder[motorB];
+28.                                           // WheelCircumferenceMM is in millimeters, so, multiply inches by 25.4 to convert to mm.
+29.  targetDegrees = 360 * inches * 25.4 / wheelCircumferenceMM * gearRatio;  // Num of Degrees to turn
+30.  bFloatDuringInactiveMotorPWM = false;    // brake
+31.  targetDegrees *= direction;
+32.  targetDegrees += rotationSensor;         // Add these degrees to the current rotation sensor
+33.  nMotorEncoderTarget[motorB] = targetDegrees; // This is the new target degree to achieve
+34.  if(direction == STOPPED) beginDrivingForward(powerLevel);
+35.  if(direction == (FORWARD * mDir)) {      // If going forward, then check rotation sensor <= target
+36.    while(nMotorRunState[motorB] != runStateIdle && nMotorRunState[motorB] != runStateHoldPosition && nMotorEncoder[motorB] <= targetDegrees) {
+37.      if(IsFollowingLine) { FollowLinePID(); }
+38.    }
+39.  } else {                                 // If going backward, then check rotation sensor >= target
+40.    while(nMotorRunState[motorB] != runStateIdle && nMotorRunState[motorB] != runStateHoldPosition && nMotorEncoder[motorB] >= targetDegrees) {
+41.      if(IsFollowingLine) { FollowLinePID(); }
+42.    }
+43.  }
+44.}
+45.void stopAfterDistance(float inches) { untilDistance(inches); stopMoving(); }
+
+1.void untilRotations(float turnRotations) {
+2.  long rotationSensor = 0;
+3.  float targetDegrees;
+4.  rotationSensor = nMotorEncoder[motorB];
+5.                                                    // WheelCircumferenceMM is in millimeters, so, multiply inches by 25.4 to convert to mm.
+6.  targetDegrees = 360 * turnRotations;  // Num of Degrees to turn
+7.  bFloatDuringInactiveMotorPWM = false;             // brake
+8.  targetDegrees *= direction;
+9.  targetDegrees += rotationSensor;                  // Add these degrees to the current rotation sensor
+10.  nMotorEncoderTarget[motorB] = targetDegrees;      // This is the new target degree to achieve
+11.  if(direction == BACKWARD) {                        // If going backward, then check rotation sensor >= target
+12.    while(nMotorRunState[motorB] != runStateIdle && nMotorRunState[motorB] != runStateHoldPosition && nMotorEncoder[motorB] >= targetDegrees) {
+13.      if(IsFollowingLine) { FollowLinePID(); }
+14.    }
+15.  } else {                                           // If going forkward, then check rotation sensor <= target
+16.    while(nMotorRunState[motorB] != runStateIdle && nMotorRunState[motorB] != runStateHoldPosition && nMotorEncoder[motorB] <= targetDegrees) {
+17.      if(IsFollowingLine) { FollowLinePID(); }
+18.    }
+19.  }
+20.}
+21.void stopAfterRotations(float inches) { untilRotations(inches); stopMoving(); }
+
+1.void accelerateOverDistance(float inches, int power) {
+2.  long rotationSensor = 0;
+3.  float targetDegrees;
+4.  if(direction == STOPPED) beginDrivingForward(18);
+5.  motor[motorB] = 18;              // Starting Power Level
+6.  float powerIncrement = (power-20) / 10;
+7.  float incrementAtDegree;
+8.  rotationSensor = nMotorEncoder[motorB];
+9.                                                    // WheelCircumferenceMM is in millimeters, so, multiply inches by 25.4 to convert to mm.
+10.  targetDegrees = 360 * inches * 25.4 / wheelCircumferenceMM * gearRatio;  // Num of Degrees to turn
+11.  bFloatDuringInactiveMotorPWM = false;             // brake
+12.  if(direction == BACKWARD) { targetDegrees*= -1; } // Direction is reverse if <0
+13.  targetDegrees += rotationSensor;                  // Add these degrees to the current rotation sensor
+14.  incrementAtDegree = rotationSensor;
+15.  nMotorEncoderTarget[motorB] = targetDegrees;      // This is the new target degree to achieve
+16.  if(direction == FORWARD) {                        // If going forward, then check rotation sensor <= target
+17.    while(nMotorRunState[motorB] != runStateIdle && nMotorRunState[motorB] != runStateHoldPosition && nMotorEncoder[motorB] <= targetDegrees) {
+18.      if(nMotorEncoder[motorB] > incrementAtDegree) {	incrementAtDegree+=36; motor[motorB] += powerIncrement; }
+19.      if(IsFollowingLine) { FollowLinePID(); }
+20.    }
+21.  } else {                                           // If going backward, then check rotation sensor >= target
+22.    while(nMotorRunState[motorB] != runStateIdle && nMotorRunState[motorB] != runStateHoldPosition && nMotorEncoder[motorB] >= targetDegrees) {
+23.      if(nMotorEncoder[motorB] < incrementAtDegree) { incrementAtDegree-=36; motor[motorB] += powerIncrement; }
+24.      if(IsFollowingLine) { FollowLinePID(); }
+25.    }
+26.  }
+27.}
+
+1.void stopAfterDistanceWithAcceleration(float inches, int power) { accelerateOverDistance(inches, power); stopMoving(); }
+2. 
+3.void untilTouch() {
+4.  while(SensorValue(touchSensor) == 0) {   // Loop until the button is pressed
+5.    if(direction == FORWARD) {             // If going forward, then check rotation sensor <= target
+6.      if(IsFollowingLine) { FollowLinePID(); }
+7.    } else {                                // If going backward, then check rotation sensor >= target
+8.      if(IsFollowingLine) { FollowLinePID(); }
+9.    }
+10.  }
+11.}
+12.void stopOnTouch() { untilTouch(); stopMoving(); }
+13.void untilRelease() {
+14.  while(SensorValue(touchSensor) == 1) {   // Loop until the button is pressed
+15.  }
+16.}
+
+
+Special Functions
+1.//////////////////////////////////////////////////////////////////////
+2.//
+3.// Special Functions
+4.//
+5.float rotations(float tempRotations) {     // Shortcut to convert Rotations into degrees
+6.  return tempRotations * 360;              // May be useful when you want to specify a certain number of
+7.}                                          // rotations and the other function requires degrees
+8.                                           // For example: accessoryDown(rotations(5)); moves accessory for 5 rotations
+
+1.void accessoryToDegree(float turnDegrees, int tempPower) {
+2.	powerLevelAccessory = tempPower;
+3.	float targetDegrees = (turnDegrees - nMotorEncoder[motorA]) % 360;
+4.	Motor(motorA,(float) targetDegrees, FORWARD);
+5.}
+6. 
+7.void accessoryUp(float turnDegrees, int tempPower) {
+8.  long rotationSensor;
+9.  bFloatDuringInactiveMotorPWM = false;    // Use the Brakes
+10.  int OldTime = time100[T1];
+11.  motor[motorA] = tempPower;
+12.  rotationSensor = nMotorEncoder[motorA];
+13.  if(turnDegrees < 0) {
+14.	  while(true) {
+15.	    if( time100[T1] - OldTime > 2 ) {
+16.	      OldTime = time100[T1];
+17.	      if(abs(rotationSensor - nMotorEncoder[motorA]) < 5) { break; }
+18.	      rotationSensor = nMotorEncoder[motorA];
+19.	    }
+20.	  }
+21.    motor[motorA] = 0;
+22.    wait10Msec(100);
+23.    motorError[motorA] = 0;  // Clear the error now that the motor has stalled.  Don't want this error affecting the next action.
+24.	} else {
+25.    float targetDegrees = ((turnDegrees + nMotorEncoder[motorA]) - motorError[motorA]);
+26.    while(nMotorEncoder[motorA] <= targetDegrees - ((float)tempPower * .6)) { }
+27.    motor[motorA] = 0;
+28.    wait10Msec(100);
+29.    motorError[motorA] = nMotorEncoder[motorA] - targetDegrees;
+30.	}
+31.  bFloatDuringInactiveMotorPWM = false; // coast or float
+32.//  nMotorEncoder[motorA] = 0;
+33.  wait10Msec(2);
+34.}
+
+1.void accessoryDown(float turnDegrees, int tempPower) {
+2.  long rotationSensor;
+3.  bFloatDuringInactiveMotorPWM = false;    // Use the Brakes
+4.  int OldTime = time100[T1];
+5.  motor[motorA] = -1 * tempPower;
+6.  rotationSensor = nMotorEncoder[motorA];
+7.  if(turnDegrees < 0) {
+8.	  while(true) {
+9.	    if( time100[T1] - OldTime > 2 ) {
+10.	      OldTime = time100[T1];
+11.	      if(abs(rotationSensor - nMotorEncoder[motorA]) < 5) { break; }
+12.	      rotationSensor = nMotorEncoder[motorA];
+13.	    }
+14.	  }
+15.    motor[motorA] = 0;
+16.    wait10Msec(100);
+17.    motorError[motorA] = 0;  // Clear the error now that the motor has stalled.  Don't want this error affecting the next action.
+18.	} else {
+19.    float targetDegrees = ((nMotorEncoder[motorA] - turnDegrees) - motorError[motorA]);
+20.    while(nMotorEncoder[motorA] >= targetDegrees + ((float)tempPower * .6)) { }
+21.    motor[motorA] = 0;
+22.    wait10Msec(100);
+23.    motorError[motorA] = nMotorEncoder[motorA] - targetDegrees;
+24.  }
+25.  bFloatDuringInactiveMotorPWM = false;  // Keep Brake on
+26.  wait10Msec(2);
+27.}
+
+
+Overloaded Functions Defined
+1./////////////////////////////////////////////////////////////////////////////////////////////
+2.//
+3.// Define the Overloaded Functions
+4.//
+5.void driveForward() {                      // Overloaded function: 0 parameters
+6.  beginDrivingForward(powerLevel);
+7.}
+8.void driveForward(float inches) {          // Overloaded function: 1 parameter
+9.  beginDrivingForward(powerLevel);
+10.  stopAfterDistance(inches);
+11.}
+12.void driveForward(float inches, int power) {   // Overloaded function: 2 parameters
+13.  beginDrivingForward(power);
+14.  stopAfterDistance(inches);
+15.}
+16.void driveBackward() {                     // Overloaded function: 0 parameters
+17.  beginDrivingBackward(powerLevel);
+18.}
+19.void driveBackward(float inches) {         // Overloaded function: 1 parameter
+20.  beginDrivingBackward(powerLevel);
+21.  stopAfterDistance(inches);
+22.}
+23.void driveBackward(float inches, int power) {  // Overloaded function: 2 parameters
+24.  beginDrivingBackward(power);
+25.  stopAfterDistance(inches);
+26.}
+27.void followLine(int thisSide, float inches) {
+28.  followLine(thisSide);
+29.  stopAfterDistance(inches);
+30.}
+31.void followWall(int thisSide) {             // Overloaded function: 1 parameters
+32.  beginFollowingWall(thisSide, powerLevel);
+33.}
+34.void followWall(int thisSide, float inches) {  // Overloaded function: 2 parameters
+35.  beginFollowingWall(thisSide, powerLevel);
+36.  stopAfterDistance(inches);
+37.}
+38.void followWall(int thisSide, float inches, int power) {  // Overloaded function: 3 parameters
+39.  beginFollowingWall(thisSide, power);
+40.  stopAfterDistance(inches);
+41.}
+42. 
+43.void wait() { wait(1); }  // Overload the Wait function to create a default without parameters
+
+1.// Overloaded function: 2 parameters
+2.void gradualTurnClockwise(float turnDegrees, float turnRadiusIN) {
+3.  gradualTurnClockwise(turnDegrees, turnRadiusIN, powerLevel);
+4.}
+5.void gradualTurnCounterClockwise(float turnDegrees, float turnRadiusIN) {
+6.  gradualTurnCounterClockwise(turnDegrees, turnRadiusIN, powerLevel);
+7.}
+8. 
+9.void swingTurnClockwise(float turnDegrees) {   // Overloaded function: 1 parameter
+10.  swingTurnClockwise(turnDegrees, powerLevel);
+11.}
+12.void swingTurnCounterClockwise(float turnDegrees) {// Overloaded function: 1 parameter
+13.  swingTurnCounterClockwise(turnDegrees, powerLevel);
+14.}
+15.void swingTurn(int dirRotation, float turnDegrees, int tempPower) { // new function: swingTurn()
+16.  if(dirRotation == COUNTERCLOCKWISE) {
+17.    swingTurnCounterClockwise(turnDegrees, tempPower);
+18.  } else {
+19.    swingTurnClockwise(turnDegrees, tempPower);
+20.  }
+21.}
+22.void swingTurn(int dirRotation, float turnDegrees) { // Overloaded function: 2 parameters
+23.  swingTurn(dirRotation, turnDegrees, powerLevel);
+24.}
+25.void pointTurnClockwise(float turnDegrees) { pointTurnClockwise(turnDegrees, powerLevel); }
+26.void pointTurnCounterClockwise(float turnDegrees) { pointTurnCounterClockwise(turnDegrees, powerLevel); }
+27.void pointTurn(int dirRotation, float turnDegrees, int tempPower) {   // new function: pointTurn()
+28.  if(dirRotation == COUNTERCLOCKWISE) {
+29.    pointTurnCounterClockwise(turnDegrees, tempPower);
+30.  } else {
+31.    pointTurnClockwise(turnDegrees, tempPower);
+32.  }
+33.}
+34.void pointTurn(int dirRotation, float turnDegrees) {  // Overloaded function: 2 parameters
+35.  pointTurn(dirRotation, turnDegrees, powerLevel);
+36.}
+37. 
+38.void accessoryUp() {
+39.  accessoryUp(-1, 25);
+40.}
+41.void accessoryDown() {
+42.  accessoryDown(-1, 25);
+43.}
+44.void accessoryUp(float turnDegrees) {
+45.  accessoryUp(turnDegrees, 25);
+46.}
+47.void accessoryDown(float turnDegrees) {
+48.  accessoryDown(turnDegrees, powerLevelAccessory);
+49.}
+50.void accessoryToDegree(float turnDegrees) {
+51.  accessoryToDegree(turnDegrees, powerLevelAccessory);
+52.}
+53.void resetRotationSensor(int thisMotor) {
+54.	nMotorEncoder[thisMotor] = 0;
+55.	motorError[thisMotor] = 0;                // Clear any motor error
+56.}
+
+
+Startup Function
+1.// This is a generic function to run both initialization functions.
+2.// The initialization functions could be run individually for smaller programs.
+3.// This Startup block must be included at the end of the file so that the
+4.// references to functions shown below do not generate compiler errors which would happen
+5.// if the function is referenced before it is actually defined.  Functions are defined first.  Then referenced.
+6.void startup() {
+7.  CloseAllHandles(nIoResult);
+8.  hFileHandle = 0;  nFileSize = defaultFileSize;
+9.  OpenRead( hFileHandle, nIoResult, sFileNameRD, nFileSize);
+10.  if(nIoResult==ioRsltFileNotFound) {
+11.    createRobotDimensionsConfig(1);         // Create the file and try again
+12.    OpenRead( hFileHandle, nIoResult, sFileNameRD, nFileSize);
+13.  }
+14.  ReadFloat(hFileHandle, nIoResult, centerOfWheelToCenterOfRobotMM);
+15.  ReadFloat(hFileHandle, nIoResult, wheelDiameterMM);
+16.  ReadFloat(hFileHandle, nIoResult, wheelCircumferenceMM);
+17.  ReadFloat(hFileHandle, nIoResult, gearRatio);
+18.  Close(hFileHandle, nIoResult);
+19.                                           // Also setup a few sensors
+20.  SensorType[touchSensor] = sensorTouch;   // Set 'touchSensor' to be of type sensorTouch
+21.  //SensorType[sonarSensor] = sensorSONAR;   // Set 'sonarSensor' to be of type sensorSONAR  // Not using Sonar in F2012
+22.  SensorType[lightSensorA] = sensorLightInactive;
+23.  SensorType[lightSensorB] = sensorLightInactive;
+24.  SensorType[colorSensor] = sensorLightInactive;
+25. 
+26.  CloseAllHandles(nIoResult);
+27.  hFileHandle = 0;  nFileSize = defaultFileSize;
+28.  OpenRead(hFileHandle, nIoResult, sFileNameLR, nFileSize);
+29.  if(nIoResult==ioRsltFileNotFound) {
+30.    createLightCalibrationFile(1);     // Create the file and try again
+31.    OpenRead(  hFileHandle, nIoResult, sFileNameLR, nFileSize);
+32.  }
+33.  ReadLong(hFileHandle, nIoResult, tLowLight); ReadLong(hFileHandle, nIoResult, tHighLight);
+34.  ReadLong(hFileHandle, nIoResult, tLowLight2); ReadLong(hFileHandle, nIoResult, tHighLight2);
+35.  Close(hFileHandle, nIoResult);
+36. 
+37.  wheelCircumferenceMM = wheelDiameterMM * PI;  // Formula.  NOT changeable.
+38. 
+39. 
+40.}

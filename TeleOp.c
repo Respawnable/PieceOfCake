@@ -1,8 +1,8 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
 #pragma config(Sensor, S1,     ,               sensorI2CMuxController)
 #pragma config(Motor,  motorA,           ,             tmotorNXT, openLoop)
-#pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, PIDControl, reversed, encoder)
-#pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, PIDControl, encoder)
+#pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, openLoop, reversed)
 #pragma config(Motor,  mtr_S1_C2_1,     motorF,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C2_2,     motorG,        tmotorTetrix, openLoop)
 #pragma config(Servo,  srvo_S1_C3_1,    servoLeft,            tServoStandard)
@@ -72,7 +72,7 @@ void moveServos()
 	{
 		servoTargetPosition =255;
 	}
-	servo[servoLeft] = servoTargetPosition;
+	servo[servoLeft] = -servoTargetPosition;
 	servo[servoRight] = servoTargetPosition;
 	// Give it time to move.
 	wait10Msec(2);

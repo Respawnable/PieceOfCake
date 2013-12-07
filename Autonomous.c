@@ -47,6 +47,8 @@ int red = 0;
 int green = 0;
 int blue = 0;
 
+// Motor power levels.
+int powerLevel = 25;
 float centerOfWheelToCenterOfRobotMM = 45.0;
 float wheelDiameterMM = 56.0;
 //
@@ -80,6 +82,7 @@ float gearRatio = 1.0;
 void initializeRobot()
 {
 	disableDiagnosticsDisplay();
+	eraseDisplay();
 	// Place code here to sinitialize servos to starting positions.
 	// Sensors are automatically configured and setup by ROBOTC. They may need a brief time to stabilize.
 	nMotorEncoder[motorL] = 0;
@@ -106,6 +109,7 @@ void GoInches(float inches, int speed)
 	motor[motorR] = speed;
 	while (abs(nMotorEncoder[motorR]) < (convert(inches)) || abs(nMotorEncoder[motorL]) < (convert(inches)))
 	{
+		nxtDisplayTextLine(7, "Motor encoder: %d", nMotorEncoder[motorR]);
 	}
 
 	motor[motorL] = 0;
@@ -136,13 +140,13 @@ task getColor()
 	_color = HTCS2readColor(HTCS2);
 	// If colour == -1, it implies an error has occurred
 	if (_color < 0) {
-		nxtDisplayTextLine(4, "ERROR!!");
+		nxtDisplayTextLine(7, "HTCS2readColor sensor error!");
 		wait1Msec(2000);
 		StopAllTasks();
 	}
 
 	if (!HTCS2readRGB(HTCS2, red, green, blue)) {
-		nxtDisplayTextLine(4, "ERROR!!");
+		nxtDisplayTextLine(7, "HTCS2readRGB sensor error!");
 		wait1Msec(2000);
 		StopAllTasks();
 	}
@@ -165,7 +169,14 @@ void driveMotors(int lspeed, int rspeed)
 
 void MoveForward ()
 {
-	driveMotors (25,25);
+  motor[motorL] = powerLevel;
+  motor[motorR] = powerLevel;
+}
+
+void MoveForwardTime(int milliSeconds)
+{
+	MoveForward();
+	wait1Msec(milliSeconds);
 }
 
 void StopMotors()
@@ -205,6 +216,8 @@ task main()
 	while (true)
 	{
 		// Step 1: Move forward until white line.
+		//GoInches(12.0, 30);
+		//MoveForwardTime(3000);
 		while (_color != WHITE_LINE_VALUE)
 		{
 			MoveForward();
@@ -224,5 +237,4 @@ task main()
 		//StopAllTasks();
 		//break;
 	}
-
-	}
+}

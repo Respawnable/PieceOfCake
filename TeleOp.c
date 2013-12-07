@@ -31,8 +31,8 @@
 
 // Keep track of where we want the servo to be.
 int servoTargetPosition = 0;
-// How far do we move the servo when a button is pressed.
-int servoIncrement = 15;
+int SERVO_UP = 200;
+int SERVO_DOWN = 50;
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //                                    initializeRobot
@@ -54,28 +54,29 @@ void initializeRobot()
 	SensorType[S3] = sensorNone;
 	SensorType[S4] = sensorNone;
 
-	//servoChangeRate[servoLeft] = SERVO_CHANGE_RATE;
-	//servoChangeRate[servoRight] = SERVO_CHANGE_RATE;
-	//servo[servoLeft] = 0;
-	//servo[servoRight] = 0;
+	servoChangeRate[servoLeft] = SERVO_CHANGE_RATE;
+	servoChangeRate[servoRight] = SERVO_CHANGE_RATE;
+	servo[servoLeft] = SERVO_DOWN;
+	servo[servoRight] = SERVO_DOWN;
 	return;
 }
 
 void moveServos()
 {
 	// Keep the servo within its range.
-	if (servoTargetPosition < 0)
+	if (ServoValue[servoLeft] < 0)
 	{
 		servoTargetPosition = 0;
 	}
-	if (servoTargetPosition > 255)
+	if (ServoValue[servoLeft] > 255)
 	{
-		servoTargetPosition =255;
+		servoTargetPosition = 255;
 	}
+
 	servo[servoLeft] = -servoTargetPosition;
 	servo[servoRight] = servoTargetPosition;
 	// Give it time to move.
-	wait10Msec(2);
+	wait10Msec(5);
 }
 
 // Find out what the buttons are requesting.
@@ -92,12 +93,12 @@ void getServoRequest()
 
 	if (buttonUp == 1)
 	{
-		servoTargetPosition += servoIncrement;
+		servoTargetPosition = SERVO_UP;
 	}
 
 	if (buttonDown == 1)
 	{
-		servoTargetPosition -= servoIncrement;
+		servoTargetPosition = SERVO_DOWN;
 	}
 
 	moveServos();

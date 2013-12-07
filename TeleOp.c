@@ -23,7 +23,7 @@
 #define JOYSTICK_MIN 10
 #define SERVO_CHANGE_RATE 10
 
-int MOTOR_LP = 25;
+int MOTOR_LP = 35;
 int MOTOR_LN = -MOTOR_LP;
 int MOTOR_WP = 75;
 int MOTOR_WN = -MOTOR_WP;

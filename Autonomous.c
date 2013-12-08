@@ -17,21 +17,21 @@
 //
 // You need to customize two functions with code unique to your specific robot.
 //
+// Team 3763 - Block Party 2013-2014
+//
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "JoystickDriver.c"  //Include file to "handle" the Bluetooth messages.
 #include "rdpartyrobotcdr-3.3.1\drivers\hitechnic-colour-v2.h"
 #include "rdpartyrobotcdr-3.3.1\drivers\hitechnic-irseeker-v2.h"
 
-// Set this based on the alliance for each competition.
-#define TURN_DIRECTION "L"
-#define TURN_TIME 145 // Time (ms/10) to complete the turn.
+// This is the direction to turn at the white line.
+#define TURN_DIRECTION "R"
+#define TURN_TIME 145 // Time (ms/10) to complete a timed turn.
 // The value we look for from the white tape.
 #define WHITE_LINE_VALUE 17
 // The radius in inches of a wheel.
 #define WHEEL_RADIUS 2
-// The robot track in inches.
-#define TRACK 9
 // Encode ticks for 1 revolution.
 #define TICKS_PER_REV 1440
 // FIGURE THIS OUT.
@@ -43,14 +43,17 @@ int red = 0;
 int green = 0;
 int blue = 0;
 
+int FORWARD = 1;
+int BACKWARD = -1;
+
 // Motor power levels.
 int powerLevel = 20;
-float centerOfWheelToCenterOfRobotMM = 45.0;
-float wheelDiameterMM = 56.0;
-//
+// Robot track (distance between the drive motors.
+float robotTrack = 17.0;
+float centerOfWheelToCenterOfRobot = 17.0;
+float wheelDiameter = 4.0;
 // Get the Wheel's circumference
-float wheelCircumference = wheelDiameterMM * PI;  // Formula.  NOT changeable.
-//
+float wheelCircumference = wheelDiameter * PI;  // Formula.  NOT changeable.
 // If no gears are used, then the gear ratio should be "(float) 1 / 1"
 float gearRatio = 1.0;
 // gearRatio = (float) 24 / 40;   (Example of two gears)
@@ -63,26 +66,16 @@ float gearRatio = 1.0;
 // In general, start with the gear at the wheel and divide it by each gear
 // in sequential order as you get closer to the gear connected to the motor
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//                                    initializeRobot
-//
-// Prior to the start of autonomous mode, you may want to perform some initialization on your robot.
-// Things that might be performed during initialization include:
-//   1. Move motors and servos to a preset position.
-//   2. Some sensor types take a short while to reach stable values during which time it is best that
-//      robot is not moving. For example, gyro sensor needs a few seconds to obtain the background
-//      "bias" value.
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Function Prototypes (So functions can be called before their definitions.)
+void StopMotors();
 
+// Initialization code.
+// !! Comment out the disableDiagnosticsDisplay() line before competition. !!!!!!
 void initializeRobot()
 {
 	disableDiagnosticsDisplay();
 	eraseDisplay();
-	// Place code here to sinitialize servos to starting positions.
-	// Sensors are automatically configured and setup by ROBOTC. They may need a brief time to stabilize.
-	nMotorEncoder[motorL] = 0;
-	nMotorEncoder[motorR] = 0;
+	// Place code here to initialize encoders, servos to starting positions, etc.
 	return;
 }
 
@@ -96,16 +89,26 @@ int convertDegree(float degree)
 	return (int)(degreesToRadians(degree));
 }
 
-void GoInches(float inches, int speed)
+// Call this before code that uses encoders.
+void ResetEncoders()
 {
 	nMotorEncoder[motorL] = 0;
 	nMotorEncoder[motorR] = 0;
+}
+
+// Go inches. direction forward = 1, backward -1.
+void GoInches(float inches, int direction)
+{
+	ResetEncoders();
 	wait1Msec(200);
-	motor[motorL] = speed;
-	motor[motorR] = speed;
-	while (abs(nMotorEncoder[motorR]) < (convert(inches)) || abs(nMotorEncoder[motorL]) < (convert(inches)))
+	// Set the stopping position.
+	nMotorEncoderTarget[motorL]= convert(inches);
+	nMotorEncoderTarget[motorR]= convert(inches);
+	motor[motorL] = powerLevel * direction;
+	motor[motorR] = powerLevel * direction;
+	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
 	{
-		nxtDisplayTextLine(7, "Motor encoder: %d", nMotorEncoder[motorR]);
+		nxtDisplayTextLine(7, "MotorR encoder: %d", nMotorEncoder[motorR]);
 	}
 
 	motor[motorL] = 0;
@@ -113,20 +116,40 @@ void GoInches(float inches, int speed)
 	wait1Msec(200);
 }
 
-void goDegrees(float degree, int speed)
+// turnDirection = 1 to turn right, -1 for left.
+void swingTurn(float turnDegrees, int turnDirection)
 {
-	nMotorEncoder[motorL] = 0;
-	nMotorEncoder[motorL] = 0;
-	wait1Msec(300);
-	motor[motorL] = -speed;
-	motor[motorR] = speed;
-	while ((abs(nMotorEncoder[motorR]) < (convertDegree(degree))) || abs(nMotorEncoder[motorL]) < (convertDegree(degree)))
+	float turningCircumference = (float)(2 * robotTrack * PI);
+	float wheelRotationsPerRobotTurn = turningCircumference / wheelCircumference;
+	float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
+	float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
+
+	if (turnDirection == 1)
+	{
+		targetDegrees += nMotorEncoder[motorL];
+		motor[motorL] = powerLevel;
+		while(nMotorEncoder[motorL] <= targetDegrees) { }
+		motor[motorL] = 0;      // turn the motor off.
+	}
+	else if (turnDirection == -1)
+	{
+		targetDegrees += nMotorEncoder[motorR];
+		motor[motorR] = powerLevel;
+		while(nMotorEncoder[motorR] <= targetDegrees) { }
+		motor[motorR] = 0;      // turn the motor off.
+	}
+}
+
+void untilDistance(float inches) {
+	long rotationSensor = 0;
+	float targetDegrees;
+	rotationSensor = nMotorEncoder[motorR];
+	targetDegrees = TICKS_PER_REV * (inches / wheelCircumference) * gearRatio;  // Num of Degrees to turn
+	targetDegrees += rotationSensor;         // Add these degrees to the current rotation sensor
+	nMotorEncoderTarget[motorR] = targetDegrees; // This is the new target degree to achieve
+	while(nMotorRunState[motorR] != runStateIdle && nMotorRunState[motorR] != runStateHoldPosition && nMotorEncoder[motorR] <= targetDegrees)
 	{
 	}
-
-	motor[motorL] = 0;
-	motor[motorR] = 0;
-	wait1Msec(300);
 }
 
 // Update the global color variables for use where needed.
@@ -157,16 +180,10 @@ void getColor()
 	//EndTimeSlice();
 }
 
-void driveMotors(int lspeed, int rspeed)
-{
-	motor[motorL] = lspeed;
-	motor[motorR] = rspeed;
-}
-
 void MoveForward ()
 {
-  motor[motorL] = powerLevel;
-  motor[motorR] = powerLevel;
+	motor[motorL] = powerLevel;
+	motor[motorR] = powerLevel;
 }
 
 void MoveForwardTime(int milliSeconds)
@@ -177,29 +194,19 @@ void MoveForwardTime(int milliSeconds)
 
 void StopMotors()
 {
-	driveMotors(0,0);
-}
-
-// Calculate turn durations
-int GetTurnDuration(int degrees)
-{
-	return (TRACK / WHEEL_RADIUS) * degrees;
+	motor[motorL] = 0;
+	motor[motorR] = 0;
+	// A little time for stop to settle.
+	wait10Msec(2);
 }
 
 // Turn 90 degrees.
 void Turn90()
 {
-	int turnSpeed = 75;
-	motor[motorL] = (TURN_DIRECTION == "R") ? turnSpeed : -turnSpeed;
+motor[motorL] = (TURN_DIRECTION == "R") ? powerLevel : -powerLevel;
 	motor[motorR] = -motor[motorL];
 	wait10Msec(TURN_TIME);
-	motor[motorL] = 0;
-	motor[motorR] = 0;
-
-	//zero encoders
-	//motors on
-	//while(left encoder - right encoder < 1000) { }  //the right encoder will count backwards during a right turn
-	//motors off
+	StopMotors();
 }
 
 task main()
@@ -207,28 +214,31 @@ task main()
 	initializeRobot();
 	//waitForStart(); // Wait for the beginning of autonomous phase.
 
+	// Step 1: Move forward until white line.
+	// Get first reading so the loop below starts.
+	getColor();
+	// If the color sensor fails, one of these might work.
+	//GoInches(12.0, 30);			// If encoders are working this is the preferred method.
+	//MoveForwardTime(3000);	// This is the simple but inaccurate way.
+	while (_color < WHITE_LINE_VALUE - 2 && _color > WHITE_LINE_VALUE + 2)
+	{
+		getColor();
+	}
+
+	// We think we're at the white line.
+	StopMotors();
+
+	// Step 2: Turn 90 degrees.
+	Turn90();
+
+	// Step 3: Move forward for x inches.
+	GoInches(18.0, FORWARD);
+
+	// Step 4: We hope to be on the ramp, stop!
+	StopMotors();
+
+	// Step 5: Sit here and wait for control to end us.
 	while (true)
 	{
-		// Step 1: Move forward until white line.
-		//GoInches(12.0, 30);
-		//MoveForwardTime(3000);
-		getColor();
-		while (_color < WHITE_LINE_VALUE - 2 && _color > WHITE_LINE_VALUE)
-		{
-			MoveForward();
-		}
-
-		StopMotors();
-
-		//// Step 2: Turn 90 degrees.
-		Turn90();
-
-		//// Step 3: Move forward for x inches.
-
-		//// Step 4: Stop.
-		StopMotors();
-
-		//StopAllTasks();
-		//break;
 	}
 }

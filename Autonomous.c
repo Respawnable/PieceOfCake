@@ -31,13 +31,16 @@
 // !! Set this before each match.  !!
 // "left" means we start on the left side of the field, aimed parallel to the baskets.
 #define FIELD_LOCATION "left"
-#define TURN_RIGHT 1
-#define TURN_LEFT -1
-#define TURN_TIME 145 // Time (ms/10) to complete a timed turn.
 // The value we look for from the white tape.
 #define WHITE_LINE_VALUE 17
 // The value we look for from the red tape.
-#define RED_LINE_VALUE 9
+#define COLOR_LINE_VALUE 9
+// Which sensor is pointed at the beacon?
+int irGoal = 7;						// Where is the beacon.
+
+#define TURN_RIGHT 1
+#define TURN_LEFT -1
+#define TURN_TIME 145 // Time (ms/10) to complete a timed turn.
 // The radius in inches of a wheel.
 #define WHEEL_RADIUS 2
 // Encode ticks for 1 revolution.
@@ -58,7 +61,6 @@ int blue = 0;
 int _dirAC = 0;
 int acS1, acS2, acS3, acS4, acS5 = 0;
 int maxSig = 0; 					// the max signal strength from the seeker.
-int irGoal = 7;						// Where is the beacon.
 
 // Record distance traveled using encoder ticks.
 long distanceMoved = 0;
@@ -309,7 +311,7 @@ void GoToBeacon()
 
 	// 3. Drive until we find red tape.
 	MoveForward();
-	while (_color < RED_LINE_VALUE - 2 && _color > RED_LINE_VALUE + 2)
+	while (_color < COLOR_LINE_VALUE - 2 && _color > COLOR_LINE_VALUE + 2)
 	{
 		getColor();
 	}

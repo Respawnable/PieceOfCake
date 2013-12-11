@@ -108,7 +108,7 @@ int convertDegree(float degree)
 // Adjust turn direction based on FIELD_LOCATION.
 int AdjustDirection(int turnDirection)
 {
-	return FIELD_LOCATION == "left" ? turnDirection : -turnDirection;
+return FIELD_LOCATION == "left" ? turnDirection : -turnDirection;
 }
 
 // Call this before code that uses encoders.
@@ -249,7 +249,7 @@ void StopMotors()
 // turnDirection = 1 to turn right, -1 for left.
 void Turn90ByTime(int turnDirection)
 {
-	turnDirection = FIELD_LOCATION == "left" ? turnDirection : -turnDirection;
+turnDirection = FIELD_LOCATION == "left" ? turnDirection : -turnDirection;
 	motor[motorL] = turnDirection * powerLevel;
 	motor[motorR] = -motor[motorL];
 	wait10Msec(TURN_TIME);
@@ -336,15 +336,33 @@ void GoFromBeaconToRampStart()
 	SwingTurn(90, TURN_RIGHT);
 }
 
+// After 30 seconds stop the motor in case we are stuck.
+task TimeAutonomous()
+{
+	ClearTimer(T1);
+	while (time10[T1] < 3000)
+	{
+		EndTimeSlice();
+	}
+
+	// Just in case we got stuck somewhere with the engines running!
+	StopMotors();
+}
+
 task main()
 {
 	initializeRobot();
 	//waitForStart(); // Wait for the beginning of autonomous phase.
 
+	StartTask(TimeAutonomous);
+
 	GoToBeacon();
 	DropBlock();
 	GoFromBeaconToRampStart();
 	ParkOnRamp();
+
+	StopTask(TimeAutonomous);
+	StopMotors();
 	// Sit here and wait for control to end us.
 	while (true)
 	{

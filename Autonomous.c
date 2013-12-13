@@ -1,8 +1,8 @@
 #pragma config(Hubs,  S1, HTMotor,  HTServo,  none,     none)
 #pragma config(Sensor, S2,     HTCS2,          sensorI2CCustom)
 #pragma config(Sensor, S3,     IRseeker,       sensorI2CCustom)
-#pragma config(Motor,  mtr_S1_C1_1,     motorL,        tmotorTetrix, PIDControl, encoder)
-#pragma config(Motor,  mtr_S1_C1_2,     motorR,        tmotorTetrix, PIDControl, reversed, encoder)
+#pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, PIDControl, encoder)
+#pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, PIDControl, reversed, encoder)
 #pragma config(Servo,  srvo_S1_C2_1,    servo1,               tServoNone)
 #pragma config(Servo,  srvo_S1_C2_2,    servo2,               tServoNone)
 #pragma config(Servo,  srvo_S1_C2_3,    servo3,               tServoNone)
@@ -30,7 +30,7 @@
 
 // !! Set this before each match.  !!
 // "left" means we start on the left side of the field, aimed parallel to the baskets.
-#define FIELD_LOCATION "left"
+#define FIELD_LOCATION "right"
 // The value we look for from the white tape.
 #define WHITE_LINE_VALUE 17
 // The value we look for from the red tape.
@@ -65,15 +65,15 @@ int maxSig = 0; 					// the max signal strength from the seeker.
 // Record distance traveled using encoder ticks.
 long distanceMoved = 0;
 // Motor power levels.
-int powerLevel = 20;
+int powerLevel = 25;
 // Robot track (distance between the drive motors.
-float robotTrack = 17.0;
+float robotTrack = 18.0;
 float centerOfWheelToCenterOfRobot = 17.0;
 float wheelDiameter = 4.0;
 // Get the Wheel's circumference
 float wheelCircumference = wheelDiameter * PI;  // Formula.  NOT changeable.
 // If no gears are used, then the gear ratio should be "(float) 1 / 1"
-float gearRatio = 1.0;
+float gearRatio = 3.5;
 // gearRatio = (float) 24 / 40;   (Example of two gears)
 // Format for the gear ratio is:
 //   If 2 gears:  (Gear that connects to the wheel) / (gear that connects to the motor)
@@ -148,18 +148,23 @@ void SwingTurn(float turnDegrees, int turnDirection)
 	float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
 	float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
 
+	ResetEncoders();
 	if (turnDirection == 1)
 	{
 		targetDegrees += nMotorEncoder[motorL];
 		motor[motorL] = powerLevel;
-		while(nMotorEncoder[motorL] <= targetDegrees) { }
+		while(nMotorEncoder[motorL] <= targetDegrees) {
+		nxtDisplayTextLine(7, "l: %d", nMotorEncoder[motorL]);
+		}
 		motor[motorL] = 0;      // turn the motor off.
 	}
 	else if (turnDirection == -1)
 	{
 		targetDegrees += nMotorEncoder[motorR];
 		motor[motorR] = powerLevel;
-		while(nMotorEncoder[motorR] <= targetDegrees) { }
+		while(nMotorEncoder[motorR] <= targetDegrees) {
+		nxtDisplayTextLine(7, "r: %d", nMotorEncoder[motorR]);
+		}
 		motor[motorR] = 0;      // turn the motor off.
 	}
 }
@@ -266,14 +271,14 @@ void ParkOnRamp()
 {
 	// 1: Move forward until white line.
 	// Get first reading so the loop below starts.
-	getColor();
+	//getColor();
 	// If the color sensor fails, one of these might work.
-	//GoInches(12.0, Forward);			// If encoders are working this is the preferred method.
-	MoveForwardTime(3000);	// This is the simple but inaccurate way.
-	while (_color < WHITE_LINE_VALUE - 2 && _color > WHITE_LINE_VALUE + 2)
-	{
-		getColor();
-	}
+	GoInches(12.0, Forward);			// If encoders are working this is the preferred method.
+	//MoveForwardTime(3000);	// This is the simple but inaccurate way.
+	//while (_color < WHITE_LINE_VALUE - 2 && _color > WHITE_LINE_VALUE + 2)
+	//{
+	//	getColor();
+	//}
 
 	// We think we're at the white line.
 	StopMotors();
@@ -354,14 +359,16 @@ task TimeAutonomous()
 task main()
 {
 	initializeRobot();
-	//waitForStart(); // Wait for the beginning of autonomous phase.
+	waitForStart(); // Wait for the beginning of autonomous phase.
 
 	StartTask(TimeAutonomous);
 
-	GoToBeacon();
-	DropBlock();
-	GoFromBeaconToRampStart();
+	//GoToBeacon();
+	//DropBlock();
+	//GoFromBeaconToRampStart();
 	ParkOnRamp();
+
+	//SwingTurn(90, TURN_LEFT);
 
 	StopTask(TimeAutonomous);
 	StopMotors();

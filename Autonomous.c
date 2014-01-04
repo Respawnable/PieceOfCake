@@ -1,5 +1,4 @@
 #pragma config(Hubs,  S1, HTMotor,  HTServo,  none,     none)
-#pragma config(Sensor, S1,     ,               sensorI2CMuxController)
 #pragma config(Sensor, S2,     HTCS2,          sensorI2CCustom)
 #pragma config(Sensor, S3,     IRseeker,       sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, PIDControl, reversed, encoder)
@@ -65,7 +64,7 @@ void MovetoIR()
 				driveMotors(100, 100);
 			}
 
-			if (_dirAC >= irGoal)
+			if (_dirAC == irGoal)
 			{
 				driveMotors(0, 0);
 				wait1Msec(10);
@@ -74,12 +73,12 @@ void MovetoIR()
 			}
 			break;
 		case 1:
-			if (_dirAC < irGoal)
+			if (_dirAC > irGoal)
 			{
 				driveMotors(100, 100);
 			}
 
-			if (_dirAC >= irGoal)
+			if (_dirAC == irGoal)
 			{
 				driveMotors(0, 0);
 				wait1Msec(10);
@@ -108,9 +107,9 @@ task main()
 	//waitForStart();
 
 	MovetoIR();
-//	Turn90();
-//	servo[servoFlip] = 128;
-	driveMotors(-25,-25);
-	driveMotors(0,0);
+	Turn90();
+	//	servo[servoFlip] = 128;
+	//driveMotors(-25,-25);
+	//driveMotors(0,0);
 	wait10Msec(1);
 }

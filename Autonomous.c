@@ -1,8 +1,9 @@
 #pragma config(Hubs,  S1, HTMotor,  HTServo,  none,     none)
+#pragma config(Sensor, S1,     ,               sensorI2CMuxController)
 #pragma config(Sensor, S2,     HTCS2,          sensorI2CCustom)
 #pragma config(Sensor, S3,     IRseeker,       sensorI2CCustom)
-#pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, PIDControl, encoder)
-#pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, PIDControl, reversed, encoder)
+#pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, PIDControl, reversed, encoder)
+#pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, PIDControl, encoder)
 #pragma config(Servo,  srvo_S1_C2_1,    servo1,               tServoNone)
 #pragma config(Servo,  srvo_S1_C2_2,    servo2,               tServoNone)
 #pragma config(Servo,  srvo_S1_C2_3,    servo3,               tServoNone)
@@ -62,10 +63,15 @@ int _dirAC = 0;
 int acS1, acS2, acS3, acS4, acS5 = 0;
 int maxSig = 0; 					// the max signal strength from the seeker.
 
+int irGoal = 7;						// 25, 26Where is the beacon.
+int irStrengthGoal = 115; // 100<x<125 the IR strenght goal (we are on the rack).
+int turnTime = 145; ///// Time (ms) to complete 90 degree turn.
+int beaconDirection = 2; ///// Which side of the robot is the beacon on (1=left, 2= right)?
+
 // Record distance traveled using encoder ticks.
 long distanceMoved = 0;
 // Motor power levels.
-int powerLevel = 25;
+int powerLevel = 35;
 // Robot track (distance between the drive motors.
 float robotTrack = 18.0;
 float centerOfWheelToCenterOfRobot = 17.0;
@@ -91,7 +97,7 @@ void StopMotors();
 // !! Comment out the disableDiagnosticsDisplay() line before competition. !!!!!!
 void initializeRobot()
 {
-	disableDiagnosticsDisplay();
+	//disableDiagnosticsDisplay();
 	eraseDisplay();
 	// Place code here to initialize encoders, servos to starting positions, etc.
 	return;
@@ -119,7 +125,6 @@ void ResetEncoders()
 	nMotorEncoder[motorL] = 0;
 	nMotorEncoder[motorR] = 0;
 }
-
 // Go inches. direction forward = 1, backward -1.
 void GoInches(float inches, int direction)
 {
@@ -273,7 +278,7 @@ void ParkOnRamp()
 	// Get first reading so the loop below starts.
 	//getColor();
 	// If the color sensor fails, one of these might work.
-	GoInches(12.0, Forward);			// If encoders are working this is the preferred method.
+	GoInches(40.0, BACKWARD);			// If encoders are working this is the preferred method.
 	//MoveForwardTime(3000);	// This is the simple but inaccurate way.
 	//while (_color < WHITE_LINE_VALUE - 2 && _color > WHITE_LINE_VALUE + 2)
 	//{
@@ -281,14 +286,14 @@ void ParkOnRamp()
 	//}
 
 	// We think we're at the white line.
-	StopMotors();
+	//StopMotors();
 
 	// 2: Turn 90 degrees.
-	SwingTurn(90, TURN_RIGHT);
+	//SwingTurn(90, TURN_LEFT);
 	//Turn90ByTime(TURN_RIGHT);
 
 	// 3: Move forward for x inches.
-	GoInches(18.0, FORWARD);
+	//GoInches(18.0, BACKWARD);
 
 	// 4: We hope to be on the ramp, stop!
 	StopMotors();

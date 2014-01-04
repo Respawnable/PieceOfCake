@@ -4,7 +4,7 @@
 #pragma config(Sensor, S3,     IRseeker,       sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, PIDControl, reversed, encoder)
 #pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, PIDControl, encoder)
-#pragma config(Servo,  srvo_S1_C2_1,    servo1,               tServoNone)
+#pragma config(Servo,  srvo_S1_C2_1,    servoFlip,            tServoStandard)
 #pragma config(Servo,  srvo_S1_C2_2,    servo2,               tServoNone)
 #pragma config(Servo,  srvo_S1_C2_3,    servo3,               tServoNone)
 #pragma config(Servo,  srvo_S1_C2_4,    servo4,               tServoNone)
@@ -21,364 +21,96 @@
 //
 // You need to customize two functions with code unique to your specific robot.
 //
-// Team 3763 - Block Party 2013-2014
-//
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "JoystickDriver.c"  //Include file to "handle" the Bluetooth messages.
-#include "rdpartyrobotcdr-3.3.1\drivers\hitechnic-colour-v2.h"
 #include "rdpartyrobotcdr-3.3.1\drivers\hitechnic-irseeker-v2.h"
 
-// !! Set this before each match.  !!
-// "left" means we start on the left side of the field, aimed parallel to the baskets.
-#define FIELD_LOCATION "right"
-// The value we look for from the white tape.
-#define WHITE_LINE_VALUE 17
-// The value we look for from the red tape.
-#define COLOR_LINE_VALUE 9
-// Which sensor is pointed at the beacon?
-int irGoal = 7;						// Where is the beacon.
-
-#define TURN_RIGHT 1
-#define TURN_LEFT -1
-#define TURN_TIME 145 // Time (ms/10) to complete a timed turn.
-// The radius in inches of a wheel.
-#define WHEEL_RADIUS 2
-// Encode ticks for 1 revolution.
-#define TICKS_PER_REV 1440
-// FIGURE THIS OUT.
-#define ENCODER_TICKS_INCH 200
-
-int FORWARD = 1;
-int BACKWARD = -1;
-
-// The GetColor task will update these.
-int _color = 0;
-int red = 0;
-int green = 0;
-int blue = 0;
-
-// IR variables.
 int _dirAC = 0;
 int acS1, acS2, acS3, acS4, acS5 = 0;
-int maxSig = 0; 					// the max signal strength from the seeker.
+int maxSig = 0; 					// The max signal strength from the seeker.
 
-int irGoal = 7;						// 25, 26Where is the beacon.
-int irStrengthGoal = 115; // 100<x<125 the IR strenght goal (we are on the rack).
-int turnTime = 145; ///// Time (ms) to complete 90 degree turn.
-int beaconDirection = 2; ///// Which side of the robot is the beacon on (1=left, 2= right)?
+// These are the tuning variables. Set these based on results of test runs.
+int wrist_pos = 26;				// At the rack height.
+int irGoal = 2;						// 25, 26 Where is the beacon.
+int irStrengthGoal = 115; // 100<x<125 the IR strenght goal.
+int turnTime = 145; // Time (ms) to complete 90 degree turn.
+int beaconDirection = 1; // Which side of the robot is the beacon on (1 = left, 2 = right)
 
-// Record distance traveled using encoder ticks.
-long distanceMoved = 0;
-// Motor power levels.
-int powerLevel = 35;
-// Robot track (distance between the drive motors.
-float robotTrack = 18.0;
-float centerOfWheelToCenterOfRobot = 17.0;
-float wheelDiameter = 4.0;
-// Get the Wheel's circumference
-float wheelCircumference = wheelDiameter * PI;  // Formula.  NOT changeable.
-// If no gears are used, then the gear ratio should be "(float) 1 / 1"
-float gearRatio = 3.5;
-// gearRatio = (float) 24 / 40;   (Example of two gears)
-// Format for the gear ratio is:
-//   If 2 gears:  (Gear that connects to the wheel) / (gear that connects to the motor)
-//   If 3 gears:  a / b / c
-//      where a = the gear that connects to the wheel
-//            c = the gear that connects to the motor
-//            b = the gear in the middle
-// In general, start with the gear at the wheel and divide it by each gear
-// in sequential order as you get closer to the gear connected to the motor
 
-// Function Prototypes (So functions can be called before their definitions.)
-void StopMotors();
-
-// Initialization code.
-// !! Comment out the disableDiagnosticsDisplay() line before competition. !!!!!!
 void initializeRobot()
 {
-	//disableDiagnosticsDisplay();
-	eraseDisplay();
-	// Place code here to initialize encoders, servos to starting positions, etc.
-	return;
+	servoChangeRate[servoFlip] = 20;          // Slow the Servo Change Rate down to only 4 positions per update.
+	servo[servoFlip] = wrist_pos;
 }
 
-int convert(float inches)
+void driveMotors(int lspeed, int rspeed)
 {
-	return (int)(inches * ENCODER_TICKS_INCH);
+	motor[motorL] = lspeed;
+	motor[motorR] = rspeed;
 }
 
-int convertDegree(float degree)
+void MovetoIR()
 {
-	return (int)(degreesToRadians(degree));
-}
-
-// Adjust turn direction based on FIELD_LOCATION.
-int AdjustDirection(int turnDirection)
-{
-return FIELD_LOCATION == "left" ? turnDirection : -turnDirection;
-}
-
-// Call this before code that uses encoders.
-void ResetEncoders()
-{
-	nMotorEncoder[motorL] = 0;
-	nMotorEncoder[motorR] = 0;
-}
-// Go inches. direction forward = 1, backward -1.
-void GoInches(float inches, int direction)
-{
-	ResetEncoders();
-	wait1Msec(200);
-	// Set the stopping position.
-	nMotorEncoderTarget[motorL]= convert(inches);
-	nMotorEncoderTarget[motorR]= convert(inches);
-	motor[motorL] = powerLevel * direction;
-	motor[motorR] = powerLevel * direction;
-	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
-	{
-		nxtDisplayTextLine(7, "MotorR encoder: %d", nMotorEncoder[motorR]);
-	}
-
-	motor[motorL] = 0;
-	motor[motorR] = 0;
-	wait1Msec(200);
-}
-
-// turnDirection = 1 to turn right, -1 for left.
-void SwingTurn(float turnDegrees, int turnDirection)
-{
-	float turningCircumference = (float)(2 * robotTrack * PI);
-	float wheelRotationsPerRobotTurn = turningCircumference / wheelCircumference;
-	float wheelDegreesOfTurningNeeded = wheelRotationsPerRobotTurn * turnDegrees;
-	float targetDegrees = wheelDegreesOfTurningNeeded * gearRatio;
-
-	ResetEncoders();
-	if (turnDirection == 1)
-	{
-		targetDegrees += nMotorEncoder[motorL];
-		motor[motorL] = powerLevel;
-		while(nMotorEncoder[motorL] <= targetDegrees) {
-		nxtDisplayTextLine(7, "l: %d", nMotorEncoder[motorL]);
-		}
-		motor[motorL] = 0;      // turn the motor off.
-	}
-	else if (turnDirection == -1)
-	{
-		targetDegrees += nMotorEncoder[motorR];
-		motor[motorR] = powerLevel;
-		while(nMotorEncoder[motorR] <= targetDegrees) {
-		nxtDisplayTextLine(7, "r: %d", nMotorEncoder[motorR]);
-		}
-		motor[motorR] = 0;      // turn the motor off.
-	}
-}
-
-// Update the global color variables for use where needed.
-void getColor()
-{
-	// Read the currently detected colour from the sensor
-	_color = HTCS2readColor(HTCS2);
-	// If colour == -1, it implies an error has occurred
-	if (_color < 0) {
-		nxtDisplayTextLine(7, "HTCS2readColor sensor error!");
-		wait1Msec(2000);
-		StopAllTasks();
-	}
-
-	if (!HTCS2readRGB(HTCS2, red, green, blue)) {
-		nxtDisplayTextLine(7, "HTCS2readRGB sensor error!");
-		wait1Msec(2000);
-		StopAllTasks();
-	}
-
-	nxtDisplayCenteredTextLine(0, "Color: %d", _color);
-	nxtDisplayCenteredBigTextLine(1, "R  G  B");
-
-	nxtEraseRect(0,10, 99, 41);
-	nxtFillRect( 0, 10, 30, 10 + (red+1)/8);
-	nxtFillRect(35, 10, 65, 10 + (green+1)/8);
-	nxtFillRect(70, 10, 99, 10 + (blue+1)/8);
-	//EndTimeSlice();
-}
-
-void MoveForward ()
-{
-	motor[motorL] = powerLevel;
-	motor[motorR] = powerLevel;
-}
-
-void MoveForwardTime(int milliSeconds)
-{
-	MoveForward();
-	wait1Msec(milliSeconds);
-}
-
-// Move forward encoder ticks.
-void MoveForwardTicks (int ticks)
-{
-	ResetEncoders();
-	nMotorEncoderTarget[motorL] = ticks;
-	nMotorEncoderTarget[motorR] = ticks;
-	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
-	{
-	}
-}
-
-void MoveBackward ()
-{
-	motor[motorL] = -powerLevel;
-	motor[motorR] = -powerLevel;
-}
-
-void MoveBackwardTime(int milliSeconds)
-{
-	MoveBackward();
-	wait1Msec(milliSeconds);
-}
-
-// Move backward encoder ticks.
-void MoveBackwardTicks (int ticks)
-{
-	ResetEncoders();
-	nMotorEncoderTarget[motorL] = -ticks;
-	nMotorEncoderTarget[motorR] = -ticks;
-	MoveBackward();
-	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
-	{
-	}
-}
-
-void StopMotors()
-{
-	motor[motorL] = 0;
-	motor[motorR] = 0;
-	// A little time for stop to settle.
-	wait10Msec(2);
-}
-
-// Turn 90 degrees based on time it takes to turn.
-// turnDirection = 1 to turn right, -1 for left.
-void Turn90ByTime(int turnDirection)
-{
-turnDirection = FIELD_LOCATION == "left" ? turnDirection : -turnDirection;
-	motor[motorL] = turnDirection * powerLevel;
-	motor[motorR] = -motor[motorL];
-	wait10Msec(TURN_TIME);
-	StopMotors();
-}
-
-// -- Function steps for scoring. --------------------------------------------------
-// Drive to the ramp and park.
-// Partly on: 				10 points
-// Fully on the ramp: 20 points
-void ParkOnRamp()
-{
-	// 1: Move forward until white line.
-	// Get first reading so the loop below starts.
-	//getColor();
-	// If the color sensor fails, one of these might work.
-	GoInches(40.0, BACKWARD);			// If encoders are working this is the preferred method.
-	//MoveForwardTime(3000);	// This is the simple but inaccurate way.
-	//while (_color < WHITE_LINE_VALUE - 2 && _color > WHITE_LINE_VALUE + 2)
-	//{
-	//	getColor();
-	//}
-
-	// We think we're at the white line.
-	//StopMotors();
-
-	// 2: Turn 90 degrees.
-	//SwingTurn(90, TURN_LEFT);
-	//Turn90ByTime(TURN_RIGHT);
-
-	// 3: Move forward for x inches.
-	//GoInches(18.0, BACKWARD);
-
-	// 4: We hope to be on the ramp, stop!
-	StopMotors();
-}
-
-// Go to the IR beacon.
-// If the block is in the pusher this should get it in the goal: 5 points
-void GoToBeacon()
-{
-	ResetEncoders();
-	// 1: Drive until beacon is next to us.
-	_dirAC = HTIRS2readACDir(IRseeker);
-	MoveForward();
-	while (_dirAC < irGoal)
+	while(true)
 	{
 		_dirAC = HTIRS2readACDir(IRseeker);
+		nxtDisplayCenteredBigTextLine(1, "IR: %d", _dirAC);
+
+		switch(beaconDirection)
+		{
+		case 2:
+			if (_dirAC < irGoal)
+			{
+				driveMotors(100, 100);
+			}
+
+			if (_dirAC >= irGoal)
+			{
+				driveMotors(0, 0);
+				wait1Msec(10);
+				return;
+				break;
+			}
+			break;
+		case 1:
+			if (_dirAC < irGoal)
+			{
+				driveMotors(100, 100);
+			}
+
+			if (_dirAC >= irGoal)
+			{
+				driveMotors(0, 0);
+				wait1Msec(10);
+				break;
+			}
+			break;
+		}
 	}
-
-	StopMotors();
-	// Save our distance here.
-	distanceMoved = nMotorEncoder[motorL];
-
-	// 2. Turn left 90 degrees.
-	SwingTurn(90, TURN_LEFT);
-
-	// 3. Drive until we find red tape.
-	MoveForward();
-	while (_color < COLOR_LINE_VALUE - 2 && _color > COLOR_LINE_VALUE + 2)
-	{
-		getColor();
-	}
-
-	StopMotors();
 }
 
-// Put a block in a basket.
-// In the IR basket: 40 points
-// In other basket:  20 points
-void DropBlock()
+// Turn 90 degrees to the beaconDirection .
+void Turn90()
 {
-	// !! We need to decide how. !!!
-}
-
-// We went to the beacon, now go to the start of ParkOnRamp() location.
-void GoFromBeaconToRampStart()
-{
-	// Turn left 90 degrees.
-	SwingTurn(90, TURN_LEFT);
-	// Drive for same distance.
-	MoveForwardTicks(distanceMoved);
-	// Turn right 90 degrees.
-	SwingTurn(90, TURN_RIGHT);
-}
-
-// After 30 seconds stop the motor in case we are stuck.
-task TimeAutonomous()
-{
-	ClearTimer(T1);
-	while (time10[T1] < 3000)
-	{
-		EndTimeSlice();
-	}
-
-	// Just in case we got stuck somewhere with the engines running!
-	StopMotors();
+	int turnSpeed = 75;
+motor[motorL] = beaconDirection == 2 ? turnSpeed : -turnSpeed;
+	motor[motorR] = -motor[motorL];
+	wait10Msec(turnTime);
+	motor[motorL] = 0;
+	motor[motorR] = 0;
+	nxtDisplayCenteredBigTextLine(2, "turnSpeed: %d",turnSpeed);
 }
 
 task main()
 {
 	initializeRobot();
-	waitForStart(); // Wait for the beginning of autonomous phase.
+	//waitForStart();
 
-	StartTask(TimeAutonomous);
-
-	//GoToBeacon();
-	//DropBlock();
-	//GoFromBeaconToRampStart();
-	ParkOnRamp();
-
-	//SwingTurn(90, TURN_LEFT);
-
-	StopTask(TimeAutonomous);
-	StopMotors();
-	// Sit here and wait for control to end us.
-	while (true)
-	{
-	}
+	MovetoIR();
+//	Turn90();
+//	servo[servoFlip] = 128;
+	driveMotors(-25,-25);
+	driveMotors(0,0);
+	wait10Msec(1);
 }

@@ -29,24 +29,24 @@
 #define DRIVE_SPEED 40
 
 string Left = "L";
-string Right ="R";
+string Right = "R";
 int DistanceToIR = 0;
 int _dirAC = 0;
 int acS1, acS2, acS3, acS4, acS5 = 0;
 int maxSig  = 0; 					// The max signal strength from the seeker.
 
 // These are the tuning variables. Set these based on results of test runs.
-int wrist_pos = 26;				// At the rack height.
+int flipper_start_pos = 26;				// Flat.
 int turnTime = 145; // Time (ms) to complete 90 degree turn.
 int beaconDirection = 1;// Which side of the robot is the beacon on (1=left, 2=right).
-int irGoal = beaconDirection == 1 ? 2 : 8;						// Where is the beacon.
+int irGoal = 3;						// Where is the beacon.
 float InchesToTape = 18;	// Distance to tape from last 90 degree turn.
 float InchesToRamp = 25;	// Distance along tape to the ramp.
 
 void initializeRobot()
 {
 	servoChangeRate[servoFlip] = 20;          // Slow the Servo Change Rate down to only 4 positions per update.
-	servo[servoFlip] = wrist_pos;
+	servo[servoFlip] = flipper_start_pos;
 }
 
 int convert(float inches)
@@ -79,13 +79,11 @@ void GoInches(float inches, int speed)
 	wait1Msec(200);
 	motor[motorL] = speed;
 	motor[motorR] = speed;
-	while (abs(nMotorEncoder[motorR]) < (convert(inches)) || abs(nMotorEncoder[motorL]) < (convert(inches)))
+	while ((abs(nMotorEncoder[motorR]) + abs(nMotorEncoder[motorL])) / 2 < (convert(inches)))
 	{
 	}
 
-	motor[motorL] = 0;
-	motor[motorR] = 0;
-	wait1Msec(200);
+	StopMotors();
 }
 
 // Run servo to dump block and return arm to rest.
@@ -111,6 +109,7 @@ void BackToStart()
 // Move foward until the beacon is found.
 void MovetoIR()
 {
+	int FindState = 1;
 	bool FoundIt = false;
 	nMotorEncoder[motorL] = 0;
 	nMotorEncoder[motorR] = 0;
@@ -120,43 +119,40 @@ void MovetoIR()
 	driveMotors(DRIVE_SPEED, DRIVE_SPEED);
 	while(!FoundIt)
 	{
-		_dirAC = HTIRS2readACDir(IRseeker);
-		nxtDisplayTextLine(1, "IR: %d", _dirAC);
-		HTIRS2readAllACStrength(IRseeker, acS1, acS2, acS3, acS4, acS5);
-	maxSig = (acS1 > acS2) ? acS1 : acS2;
-	maxSig = (maxSig > acS3) ? maxSig : acS3;
-	maxSig = (maxSig > acS4) ? maxSig : acS4;
-	maxSig = (maxSig > acS5) ? maxSig : acS5;
-		nxtDisplayTextLine(2, "maxSig: %d", maxSig);
-
-		switch(beaconDirection)
+		switch (FindState)
 		{
 		case 1:
-			if (_dirAC > irGoal)
-			{
-				driveMotors(DRIVE_SPEED, DRIVE_SPEED);
-			}
+			// Look for target
+			// Get the direction.
+			_dirAC = HTIRS2readACDir(IRseeker);
+			// Make 0 straight ahead, all positive, no left or right worry.
+			_dirAC = abs(_dirAC - 5);
+			// Get the strength.
+			nxtDisplayTextLine(1, "IR: %d", _dirAC);
 
-			if (_dirAC == irGoal)
+			HTIRS2readAllACStrength(IRseeker, acS1, acS2, acS3, acS4, acS5);
+		maxSig = (acS1 > acS2) ? acS1 : acS2;
+		maxSig = (maxSig > acS3) ? maxSig : acS3;
+		maxSig = (maxSig > acS4) ? maxSig : acS4;
+		maxSig = (maxSig > acS5) ? maxSig : acS5;
+			nxtDisplayTextLine(2, "maxSig: %d", maxSig);
+
+			wait10Msec(2);
+			if (_dirAC >= irGoal)
 			{
 				StopMotors();
 				DistanceToIR = nMotorEncoder[motorR];
-				FoundIt = true;
+				FindState++;
 			}
 			break;
 		case 2:
-			if (_dirAC < irGoal)
-			{
-				driveMotors(DRIVE_SPEED, DRIVE_SPEED);
-			}
-
-			if (_dirAC == irGoal)
-			{
-				StopMotors();
-				DistanceToIR = nMotorEncoder[motorR];
-				FoundIt = true;
-				break;
-			}
+			// Look for strongest signal.
+			FindState++;
+			break;
+		case 3:
+			// Backup a little.
+			FindState++;
+			FoundIt = true;
 			break;
 		}
 	}
@@ -166,8 +162,7 @@ void MovetoIR()
 void Turn90(string direction)
 {
 	direction = beaconDirection == 1 ? "L" : "R";
-	int turnSpeed = DRIVE_SPEED;
-motor[motorL] = direction == "R" ? turnSpeed : -turnSpeed;
+	motor[motorL] = direction == "R" ? DRIVE_SPEED : -DRIVE_SPEED;
 	motor[motorR] = -motor[motorL];
 	wait10Msec(turnTime);
 	StopMotors();

@@ -102,6 +102,7 @@ void BackToStart()
 	motor[motorR] = -DRIVE_SPEED;
 	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
 	{
+		nxtDisplayTextLine(3, "Enc: %d", nMotorEncoder[motorL]);
 	}
 }
 
@@ -173,7 +174,7 @@ task main()
 
 	MovetoIR();
 	DumpBlock();
-	BackToStart();
+	//BackToStart();
 	Turn90(Left);
 	GoInches(InchesToTape, DRIVE_SPEED);
 	Turn90(Right);
@@ -183,7 +184,7 @@ task main()
 	// Wait for FCS to stop us.
 	while (true)
 	{
-		//note to self play songs hePlaySound
+		//note to self play songs
 	PlaySound(soundDownwardTones);
 	}
 }

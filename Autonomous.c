@@ -25,22 +25,33 @@
 #include "JoystickDriver.c"  //Include file to "handle" the Bluetooth messages.
 #include "rdpartyrobotcdr-3.3.1\drivers\hitechnic-irseeker-v2.h"
 
-int _dirAC = 0;
-int acS1, acS2, acS3, acS4, acS5 = 0;
-int maxSig = 0; 					// The max signal strength from the seeker.
+#define DRIVE_SPEED 40
+#define ENCODER_TICKS_INCH 200
 
-// These are the tuning variables. Set these based on results of test runs.
-int wrist_pos = 26;				// At the rack height.
-int irGoal = 2;						// 25, 26 Where is the beacon.
-int irStrengthGoal = 115; // 100<x<125 the IR strenght goal.
+string Left = "L";
+string Right = "R";
+
+int DistanceToIR = 0; //Distance from beacon
+int _dirAC = 0; //Sensor number
+int acS1, acS2, acS3, acS4, acS5 = 0; //Stores IR sensor values
+int maxSig = 0; // The max signal strength from the seeker.
+int flipper_start_pos = 26; //Flat
 int turnTime = 145; // Time (ms) to complete 90 degree turn.
-int beaconDirection = 1; // Which side of the robot is the beacon on (1 = left, 2 = right)
+int beaconDirection = 1; // Which side of the robot is the beacon on
+int irGoal = 3; // 25, 26 Where is the beacon.
 
+float InchesToTape = 18;
+float InchesToRamp = 25;
 
 void initializeRobot()
 {
-	servoChangeRate[servoFlip] = 20;          // Slow the Servo Change Rate down to only 4 positions per update.
-	servo[servoFlip] = wrist_pos;
+	servoChangeRate[servoFlip] = 20; // Slow the Servo Change Rate down to only 4 positions per update.
+	servo[servoFlip] = flipper_start_pos;
+}
+
+int convert(float inches)
+{
+	return (int)(inches * ENCODER_TICKS_INCH);
 }
 
 void driveMotors(int lspeed, int rspeed)
@@ -49,56 +60,110 @@ void driveMotors(int lspeed, int rspeed)
 	motor[motorR] = rspeed;
 }
 
+void MoveForward ()
+{
+	driveMotors (DRIVE_SPEED, DRIVE_SPEED);
+}
+
+void StopMotors()
+{
+	driveMotors(0,0);
+	wait1Msec(20);
+}
+
+void GoInches(float inches, int speed)
+{
+	nMotorEncoder[motorL] = 0;
+	nMotorEncoder[motorR] = 0;
+	wait1Msec(200);
+	motor[motorL] = speed;
+	motor[motorR] = speed;
+	while ((abs(nMotorEncoder[motorR]) + abs(nMotorEncoder[motorL])) / 2 < (convert(inches)))
+	{
+	}
+
+	StopMotors();
+}
+
+// Run servo to dump block and return arm to rest.
+void DumpBlock()
+{
+}
+
+// Move back to start after a trip to the IR beacon.
+void BackToStart()
+{
+	nMotorEncoder[motorL] = 0;
+	nMotorEncoder[motorR] = 0;
+	wait1Msec(200);
+	nMotorEncoderTarget[motorL] = -DistanceToIR;
+	nMotorEncoderTarget[motorR] = -DistanceToIR;
+	motor[motorL] = -DRIVE_SPEED;
+	motor[motorR] = -DRIVE_SPEED;
+	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
+	{
+	}
+}
+
 void MovetoIR()
 {
-	while(true)
+	int FindState = 1;
+	bool FoundIt = false;
+	nMotorEncoder[motorL] = 0;
+	nMotorEncoder[motorR] = 0;
+	wait1Msec(200);
+
+	// Start moving.
+	driveMotors(DRIVE_SPEED, DRIVE_SPEED);
+	while(!FoundIt)
 	{
-		_dirAC = HTIRS2readACDir(IRseeker);
-		nxtDisplayCenteredBigTextLine(1, "IR: %d", _dirAC);
-
-		switch(beaconDirection)
+		switch (FindState)
 		{
-		case 2:
-			if (_dirAC < irGoal)
-			{
-				driveMotors(100, 100);
-			}
+		case 1:
+			// Look for target
+			// Get the direction.
+			_dirAC = HTIRS2readACDir(IRseeker);
+			// Make 0 straight ahead, all positive, no left or right worry.
+			_dirAC = abs(_dirAC - 5);
+			// Get the strength.
+			nxtDisplayTextLine(1, "IR: %d", _dirAC);
 
-			if (_dirAC == irGoal)
+			HTIRS2readAllACStrength(IRseeker, acS1, acS2, acS3, acS4, acS5);
+		maxSig = (acS1 > acS2) ? acS1 : acS2;
+		maxSig = (maxSig > acS3) ? maxSig : acS3;
+		maxSig = (maxSig > acS4) ? maxSig : acS4;
+		maxSig = (maxSig > acS5) ? maxSig : acS5;
+			nxtDisplayTextLine(2, "maxSig: %d", maxSig);
+
+			wait10Msec(2);
+			if (_dirAC >= irGoal)
 			{
-				driveMotors(0, 0);
-				wait1Msec(10);
-				return;
-				break;
+				StopMotors();
+				DistanceToIR = nMotorEncoder[motorR];
+				FindState++;
 			}
 			break;
-		case 1:
-			if (_dirAC > irGoal)
-			{
-				driveMotors(100, 100);
-			}
-
-			if (_dirAC == irGoal)
-			{
-				driveMotors(0, 0);
-				wait1Msec(10);
-				break;
-			}
+		case 2:
+			// Look for strongest signal.
+			FindState++;
+			break;
+		case 3:
+			// Backup a little.
+			FindState++;
+			FoundIt = true;
 			break;
 		}
 	}
 }
 
 // Turn 90 degrees to the beaconDirection .
-void Turn90()
+void Turn90(string direction)
 {
-	int turnSpeed = 75;
-motor[motorL] = beaconDirection == 2 ? turnSpeed : -turnSpeed;
+	direction = beaconDirection == 1 ? "L" : "R";
+	motor[motorL] = direction == "R" ? DRIVE_SPEED : -DRIVE_SPEED;
 	motor[motorR] = -motor[motorL];
 	wait10Msec(turnTime);
-	motor[motorL] = 0;
-	motor[motorR] = 0;
-	nxtDisplayCenteredBigTextLine(2, "turnSpeed: %d",turnSpeed);
+	StopMotors();
 }
 
 task main()
@@ -107,9 +172,18 @@ task main()
 	//waitForStart();
 
 	MovetoIR();
-	Turn90();
-	//	servo[servoFlip] = 128;
-	//driveMotors(-25,-25);
-	//driveMotors(0,0);
+	DumpBlock();
+	BackToStart();
+	Turn90(Left);
+	GoInches(InchesToTape, DRIVE_SPEED);
+	Turn90(Right);
+	GoInches(InchesToRamp, DRIVE_SPEED);
+	StopMotors();
 	wait10Msec(1);
+	// Wait for FCS to stop us.
+	while (true)
+	{
+		//note to self play songs hePlaySound
+	PlaySound(soundDownwardTones);
+	}
 }

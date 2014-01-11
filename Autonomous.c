@@ -1,8 +1,9 @@
 #pragma config(Hubs,  S1, HTMotor,  HTServo,  none,     none)
+#pragma config(Sensor, S1,     ,               sensorI2CMuxController)
 #pragma config(Sensor, S2,     HTCS2,          sensorI2CCustom)
 #pragma config(Sensor, S3,     IRseeker,       sensorI2CCustom)
-#pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, PIDControl, reversed, encoder)
-#pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, PIDControl, encoder)
+#pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, PIDControl, encoder)
+#pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, PIDControl, reversed, encoder)
 #pragma config(Servo,  srvo_S1_C2_1,    servoFlip,            tServoStandard)
 #pragma config(Servo,  srvo_S1_C2_2,    servo2,               tServoNone)
 #pragma config(Servo,  srvo_S1_C2_3,    servo3,               tServoNone)
@@ -184,7 +185,7 @@ void Turn90(string direction)
 task main()
 {
 	initializeRobot();
-	//waitForStart();
+	waitForStart();
 
 	MovetoIR();
 	DumpBlock();

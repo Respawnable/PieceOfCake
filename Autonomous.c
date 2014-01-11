@@ -37,8 +37,9 @@ int acS1, acS2, acS3, acS4, acS5 = 0; //Stores IR sensor values
 int maxSig = 0; // The max signal strength from the seeker.
 int flipper_start_pos = 26; //Flat
 int turnTime = 145; // Time (ms) to complete 90 degree turn.
-int beaconDirection = 1; // Which side of the robot is the beacon on
-int irGoal = 3; // 25, 26 Where is the beacon.
+// This variable is set by the MoveToIR function (It knows where the beacon is located).
+string beaconDirection = "L"; // Which side of the robot is the beacon on
+int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
 
 float InchesToTape = 18;
 float InchesToRamp = 25;
@@ -126,6 +127,10 @@ void MovetoIR()
 			_dirAC = HTIRS2readACDir(IRseeker);
 			// Make 0 straight ahead, all positive, no left or right worry.
 			_dirAC = abs(_dirAC - 5);
+
+			// Set the direction for the turn90 function.
+		beaconDirection = _dirAC < 0 ? "L" : "R";
+
 			// Get the strength.
 			nxtDisplayTextLine(1, "IR: %d", _dirAC);
 
@@ -157,11 +162,13 @@ void MovetoIR()
 	}
 }
 
-// Turn 90 degrees to the beaconDirection .
+// Turn 90 degrees to the beaconDirection.
+// Call the function assuming the beacon is on the left.
 void Turn90(string direction)
 {
-	direction = beaconDirection == 1 ? "L" : "R";
-	motor[motorL] = direction == "R" ? DRIVE_SPEED : -DRIVE_SPEED;
+	// Adjust the requested direction to reflect the actual location of the beacon.
+	direction = beaconDirection == direction ? "L" : "R";
+	motor[motorL] = direction == "L" ? -DRIVE_SPEED : DRIVE_SPEED;
 	motor[motorR] = -motor[motorL];
 	wait10Msec(turnTime);
 	StopMotors();
@@ -174,7 +181,7 @@ task main()
 
 	MovetoIR();
 	DumpBlock();
-	//BackToStart();
+	BackToStart();
 	Turn90(Left);
 	GoInches(InchesToTape, DRIVE_SPEED);
 	Turn90(Right);
@@ -185,6 +192,6 @@ task main()
 	while (true)
 	{
 		//note to self play songs
-	PlaySound(soundDownwardTones);
+		PlaySound(soundDownwardTones);
 	}
 }

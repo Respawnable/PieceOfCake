@@ -105,7 +105,7 @@ void driveMotors()
 	int joyRight = joystick.joy1_y2;
 
 	// If the left or right joysticks are engaged beyond a minimum threshold, operate the drive
-	// motors; else stop them. The threshold is needed because a joystick that's not being touched
+	// motors; else stop them. The threshold is needed because a joystick that is not being touched
 	// can still show small non-zero values.
 	// Uses exponential increase in speed to help smooth the control at slow speeds.
 	if ((abs(joyLeft) > JOYSTICK_MIN) || (abs(joyRight) > JOYSTICK_MIN))

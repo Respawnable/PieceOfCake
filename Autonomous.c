@@ -89,6 +89,12 @@ void GoInches(float inches, int speed)
 // Run servo to dump block and return arm to rest.
 void DumpBlock()
 {
+	while (true)
+    {
+            servo[servoFlip] = 120; //Flip the ball out.
+            wait1Msec(200);
+            servo[servoFlip] = -120; //Move back to the starting position.
+        }
 }
 
 // Move back to start after a trip to the IR beacon.
@@ -125,11 +131,12 @@ void MovetoIR()
 			// Look for target
 			// Get the direction.
 			_dirAC = HTIRS2readACDir(IRseeker);
-			// Make 0 straight ahead, all positive, no left or right worry.
-			_dirAC = abs(_dirAC - 5);
 
 			// Set the direction for the turn90 function.
-		beaconDirection = _dirAC < 0 ? "L" : "R";
+			beaconDirection = _dirAC < 0 ? "L" : "R";
+
+			// Make 0 straight ahead, all positive, no left or right worry.
+			_dirAC = abs(_dirAC - 5);
 
 			// Get the strength.
 			nxtDisplayTextLine(1, "IR: %d", _dirAC);

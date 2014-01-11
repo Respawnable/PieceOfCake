@@ -41,13 +41,14 @@ int turnTime = 145; // Time (ms) to complete 90 degree turn.
 // This variable is set by the MoveToIR function (It knows where the beacon is located).
 string beaconDirection = "L"; // Which side of the robot is the beacon on
 int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
+int servoMoveRange = 120; // Servo location to dump block (assumes 0 = rest position).
 
 float InchesToTape = 18;
 float InchesToRamp = 25;
 
 void initializeRobot()
 {
-	servoChangeRate[servoFlip] = 20; // Slow the Servo Change Rate down to only 4 positions per update.
+	servoChangeRate[servoFlip] = 20; // Servo Change Rate, positions per update (20ms).
 	servo[servoFlip] = flipper_start_pos;
 }
 
@@ -90,22 +91,21 @@ void GoInches(float inches, int speed)
 // Run servo to dump block and return arm to rest.
 void DumpBlock()
 {
-	while (true)
-    {
-            servo[servoFlip] = 120; //Flip the ball out.
-            wait1Msec(200);
-            servo[servoFlip] = -120; //Move back to the starting position.
-        }
+	servo[servoFlip] = servoMoveRange; //Flip the ball out.
+	wait1Msec(200);
+	servo[servoFlip] = ServoValue[servoFlip] - servoMoveRange; //Move back to the starting position.
 }
 
 // Move back to start after a trip to the IR beacon.
 void BackToStart()
 {
+	nxtDisplayTextLine(4, "Distance: %d", DistanceToIR);
 	nMotorEncoder[motorL] = 0;
 	nMotorEncoder[motorR] = 0;
 	wait1Msec(200);
 	nMotorEncoderTarget[motorL] = -DistanceToIR;
 	nMotorEncoderTarget[motorR] = -DistanceToIR;
+	wait1Msec(200);
 	motor[motorL] = -DRIVE_SPEED;
 	motor[motorR] = -DRIVE_SPEED;
 	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)

@@ -200,6 +200,6 @@ task main()
 	while (true)
 	{
 		//note to self play songs
-		PlaySound(soundDownwardTones);
+		PlaySoundFile();
 	}
 }

@@ -42,14 +42,14 @@ int _dirAC = 0; //Sensor number
 int acS1, acS2, acS3, acS4, acS5 = 0; //Stores IR sensor values
 int maxSig = 0; // The max signal strength from the seeker.
 int flipper_start_pos = 0; //Flat
-int turnTime = 100; // Time (ms) to complete 90 degree turn.
+int turnTime = 120; // Time (ms) to complete 90 degree turn.
 // This variable is set by the MoveToIR function (It knows where the beacon is located).
 string beaconDirection = "L"; // Which side of the robot is the beacon on
 int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
-int servoMoveRange = 120; // Servo location to dump block (assumes 0 = rest position).
+int servoMoveRange = 150; // Servo location to dump block (assumes 0 = rest position).
 
-float InchesToTape = 18;
-float InchesToRamp = 25;
+float InchesToTape = 28;
+float InchesToRamp = 24;
 
 /*-----------------------------------------------------------------------------*/
 /*                                                                             */
@@ -138,7 +138,7 @@ task MotorSlewRateTask()
 
 void initializeRobot()
 {
-	servoChangeRate[servoFlip] = 20; // Servo Change Rate, positions per update (20ms).
+	servoChangeRate[servoFlip] = 2; // Servo Change Rate, positions per update (20ms).
 	servo[servoFlip] = flipper_start_pos;
 	ResetEncoders();
 	disableDiagnosticsDisplay();
@@ -192,7 +192,11 @@ void GoInches(float inches, int speed)
 void DumpBlock()
 {
 	servo[servoFlip] = servoMoveRange; //Flip the block out.
-	wait1Msec(200);
+	while (ServoValue[servoFlip] < servoMoveRange)
+	{
+		wait1Msec(20);
+	}
+
 	servo[servoFlip] = ServoValue[servoFlip] - servoMoveRange; //Move back to the starting position.
 }
 
@@ -204,18 +208,22 @@ void BackToStart()
 		return;
 	}
 
+	StopTask(MotorSlewRateTask);
 	//nxtDisplayTextLine(4, "Distance: %d", DistanceToIR);
 	ResetEncoders();
 	nMotorEncoderTarget[motorL] = DistanceToIR;
 	nMotorEncoderTarget[motorR] = DistanceToIR;
 	wait10Msec(30);
-	motorReq[motorL] = -DRIVE_SPEED;
-	motorReq[motorR] = -DRIVE_SPEED;
+	motor[motorL] = -DRIVE_SPEED;
+	motor[motorR] = -DRIVE_SPEED;
 	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
 	{
 		nxtDisplayTextLine(3, "Enc: %d", nMotorEncoder[motorL]);
 		nxtDisplayTextLine(4, "RunState: %d", nMotorRunState[motorL]);
 	}
+
+	StartTask(MotorSlewRateTask);
+	wait10Msec(2);
 }
 
 void MovetoIR()
@@ -357,17 +365,17 @@ task main()
 	wait10Msec(BEFORE_START_10MS);
 	StartTask(MotorSlewRateTask);
 
-	//MovetoIR();
-	//DumpBlock();
-	//BackToStart();
+	MovetoIR();
+	DumpBlock();
+	BackToStart();
 	Turn90(Left);
 	GoInches(InchesToTape, DRIVE_SPEED);
 	Turn90(Right);
 	GoInches(InchesToRamp, DRIVE_SPEED);
 
 	// Test Function Here
-	PointTurn(Left);
-	DriveSquareTest();
+	//PointTurn(Left);
+	//DriveSquareTest();
 	//LookForBeacon();
 
 	StopMotors();

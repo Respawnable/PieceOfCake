@@ -12,7 +12,7 @@
 //#include "drivers/HTIRS2-driver.h"
 // if you use the "drivers/HTIRS2-driver.h" line,
 // then you should comment out the following line.
-#include "rdpartyrobotcdr-3.1\drivers\hitechnic-irseeker-v2.h"
+#include ".\rdpartyrobotcdr-3.3.1\drivers\hitechnic-irseeker-v2.h"
 // sTextLines is an array of strings - used to keep
 // track of if changes to display occur.
 string sTextLines[8];

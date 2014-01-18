@@ -6,7 +6,7 @@
 #pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, PIDControl, reversed, encoder)
 #pragma config(Motor,  mtr_S1_C2_1,     motorF,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C2_2,     motorG,        tmotorTetrix, openLoop)
-#pragma config(Servo,  srvo_S1_C3_1,    servoFlip,            tServoStandard)
+#pragma config(Servo,  srvo_S1_C3_1,    servoFlip,            tServoNone)
 #pragma config(Servo,  srvo_S1_C3_2,    servo2,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_3,    servo3,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_4,    servo4,               tServoNone)
@@ -49,7 +49,7 @@ int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
 int servoMoveRange = 150; // Servo location to dump block (assumes 0 = rest position).
 
 float InchesToTape = 28;
-float InchesToRamp = 24;
+float InchesToRamp = 30;
 
 /*-----------------------------------------------------------------------------*/
 /*                                                                             */
@@ -377,16 +377,16 @@ task main()
 	wait10Msec(BEFORE_START_10MS);
 	StartTask(MotorSlewRateTask);
 
-	//MovetoIR();
-	//DumpBlock();
-	//BackToStart();
-	//Turn90(Left);
-	//GoInches(InchesToTape, DRIVE_SPEED);
-	//Turn90(Right);
-	//GoInches(InchesToRamp, DRIVE_SPEED);
+	MovetoIR();
+	DumpBlock();
+	BackToStart();
+	Turn90(Left);
+	GoInches(InchesToTape, DRIVE_SPEED);
+	Turn90(Right);
+	GoInches(InchesToRamp, DRIVE_SPEED);
 
 	// Test Function Here
-	MoveServo();
+	//MoveServo();
 	//PointTurn(Left);
 	//DriveSquareTest();
 	//LookForBeacon();
@@ -400,5 +400,6 @@ task main()
 	{
 		//note to self play songs
 		PlaySoundFile("woops.rso");
+		wait10Msec(200);
 	}
 }

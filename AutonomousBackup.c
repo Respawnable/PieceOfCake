@@ -42,103 +42,23 @@ int _dirAC = 0; //Sensor number
 int acS1, acS2, acS3, acS4, acS5 = 0; //Stores IR sensor values
 int maxSig = 0; // The max signal strength from the seeker.
 int flipper_start_pos = 0; //Flat
-int turnTime = 120; // Time (ms) to complete 90 degree turn.
+int turnTime = 60; // Time (ms) to complete 90 degree turn.
 // This variable is set by the MoveToIR function (It knows where the beacon is located).
 string beaconDirection = "L"; // Which side of the robot is the beacon on
 int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
-int servoMoveRange = 150; // Servo location to dump block (assumes 0 = rest position).
+int servoMoveRange = 120; // Servo location to dump block (assumes 0 = rest position).
 
-float InchesToTape = 28;
-float InchesToRamp = 24;
-
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*  definitiona and variables for the motor slew rate controller.              */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-
-#define MOTOR_NUM               5
-#define MOTOR_MAX_VALUE         127
-#define MOTOR_MIN_VALUE         (-127)
-#define MOTOR_DEFAULT_SLEW_RATE 5      // Default will cause 375mS from full fwd to rev
-#define MOTOR_FAST_SLEW_RATE    256     // essentially off
-#define MOTOR_TASK_DELAY        15      // task 1/frequency in mS (about 66Hz)
-#define MOTOR_DEADBAND          10
-
-// Array to hold requested speed for the motors
-int motorReq[ MOTOR_NUM ];
-
-// Array to hold "slew rate" for the motors, the maximum change every time the task
-// runs checking current mootor speed.
-int motorSlew[ MOTOR_NUM ];
+float InchesToTape = 18;
+float InchesToRamp = 25;
 
 // Function declarations.
 void Turn90(string direction);
 void ResetEncoders();
 void StopMotors();
 
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*  Task  - compares the requested speed of each motor to the current speed    */
-/*          and increments or decrements to reduce the difference as necessary */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-
-task MotorSlewRateTask()
-{
-	int motorIndex;
-	int motorTmp;
-
-	// Initialize stuff
-	for(motorIndex=0;motorIndex<MOTOR_NUM;motorIndex++)
-	{
-		motorReq[motorIndex] = 0;
-		motorSlew[motorIndex] = MOTOR_DEFAULT_SLEW_RATE;
-	}
-
-	// run task until stopped
-	while( true )
-	{
-		// run loop for every motor
-		for( motorIndex=0; motorIndex<MOTOR_NUM; motorIndex++)
-		{
-			// So we don't keep accessing the internal storage
-			motorTmp = motor[ motorIndex ];
-
-			// Do we need to change the motor value ?
-			if( motorTmp != motorReq[motorIndex] )
-			{
-				// increasing motor value
-				if( motorReq[motorIndex] > motorTmp )
-				{
-					motorTmp += motorSlew[motorIndex];
-					// limit
-					if( motorTmp > motorReq[motorIndex] )
-						motorTmp = motorReq[motorIndex];
-				}
-
-				// decreasing motor value
-				if( motorReq[motorIndex] < motorTmp )
-				{
-					motorTmp -= motorSlew[motorIndex];
-					// limit
-					if( motorTmp < motorReq[motorIndex] )
-						motorTmp = motorReq[motorIndex];
-				}
-
-				// finally set motor
-				motor[motorIndex] = motorTmp;
-			}
-		}
-
-		// Wait approx the speed of motor update over the spi bus
-		wait1Msec( MOTOR_TASK_DELAY );
-	}
-}
-
 void initializeRobot()
 {
-	servoChangeRate[servoFlip] = 2; // Servo Change Rate, positions per update (20ms).
+	servoChangeRate[servoFlip] = 20; // Servo Change Rate, positions per update (20ms).
 	servo[servoFlip] = flipper_start_pos;
 	ResetEncoders();
 	disableDiagnosticsDisplay();
@@ -151,8 +71,8 @@ int convert(float inches)
 
 void driveMotors(int lspeed, int rspeed)
 {
-	motorReq[motorL] = lspeed;
-	motorReq[motorR] = rspeed;
+	motor[motorL] = lspeed;
+	motor[motorR] = rspeed;
 }
 
 void MoveForward ()
@@ -177,10 +97,8 @@ void GoInches(float inches, int speed)
 {
 	ResetEncoders();
 	wait1Msec(200);
-	motorReq[motorL] = speed;
-	motorReq[motorR] = speed;
-	//motor[motorL] = speed;
-	//motor[motorR] = speed;
+	motor[motorL] = speed;
+	motor[motorR] = speed;
 	while ((abs(nMotorEncoder[motorR]) + abs(nMotorEncoder[motorL])) / 2 < (convert(inches)))
 	{
 	}
@@ -192,11 +110,7 @@ void GoInches(float inches, int speed)
 void DumpBlock()
 {
 	servo[servoFlip] = servoMoveRange; //Flip the block out.
-	while (ServoValue[servoFlip] < servoMoveRange)
-	{
-		wait1Msec(20);
-	}
-
+	wait1Msec(200);
 	servo[servoFlip] = ServoValue[servoFlip] - servoMoveRange; //Move back to the starting position.
 }
 
@@ -208,7 +122,6 @@ void BackToStart()
 		return;
 	}
 
-	StopTask(MotorSlewRateTask);
 	//nxtDisplayTextLine(4, "Distance: %d", DistanceToIR);
 	ResetEncoders();
 	nMotorEncoderTarget[motorL] = DistanceToIR;
@@ -221,9 +134,6 @@ void BackToStart()
 		nxtDisplayTextLine(3, "Enc: %d", nMotorEncoder[motorL]);
 		nxtDisplayTextLine(4, "RunState: %d", nMotorRunState[motorL]);
 	}
-
-	StartTask(MotorSlewRateTask);
-	wait10Msec(2);
 }
 
 void MovetoIR()
@@ -339,8 +249,8 @@ void PointTurn(string direction)
 	nMotorEncoderTarget[motorL] = direction == "L" ? -ENCODER_TICKS_90_TURN : ENCODER_TICKS_90_TURN;
 	nMotorEncoderTarget[motorR] = direction == "L" ? ENCODER_TICKS_90_TURN : -ENCODER_TICKS_90_TURN;
 	wait1Msec(200);
-	motorReq[motorL] = DRIVE_SPEED;
-	motorReq[motorR] = -DRIVE_SPEED;
+	motor[motorL] = DRIVE_SPEED;
+	motor[motorR] = -DRIVE_SPEED;
 	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
 	{
 	}
@@ -351,8 +261,8 @@ void Turn90(string direction)
 {
 	// Adjust the requested direction to reflect the actual location of the beacon.
 	direction = beaconDirection == direction ? "L" : "R";
-	motorReq[motorL] = direction == "L" ? -DRIVE_SPEED : DRIVE_SPEED;
-	motorReq[motorR] = -motor[motorL];
+	motor[motorL] = direction == "L" ? -DRIVE_SPEED : DRIVE_SPEED;
+	motor[motorR] = -motor[motorL];
 	wait10Msec(turnTime);
 	StopMotors();
 }
@@ -363,8 +273,6 @@ task main()
 	//waitForStart();
 
 	wait10Msec(BEFORE_START_10MS);
-	StartTask(MotorSlewRateTask);
-
 	MovetoIR();
 	DumpBlock();
 	BackToStart();
@@ -375,12 +283,11 @@ task main()
 
 	// Test Function Here
 	//PointTurn(Left);
-	//DriveSquareTest();
+	//DriveSquaresTest();
 	//LookForBeacon();
 
 	StopMotors();
 	wait1Msec(200);
-	StopTask(MotorSlewRateTask);
 
 	// Wait for FCS to stop us.
 	while (true)

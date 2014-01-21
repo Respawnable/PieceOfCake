@@ -1,12 +1,10 @@
 #pragma config(Hubs,  S1, HTMotor,  HTMotor,  HTServo,  none)
-#pragma config(Sensor, S1,     ,               sensorI2CMuxController)
-#pragma config(Sensor, S2,     HTCS2,          sensorNone)
 #pragma config(Sensor, S3,     IRseeker,       sensorI2CCustom)
 #pragma config(Motor,  mtr_S1_C1_1,     motorR,        tmotorTetrix, PIDControl, encoder)
 #pragma config(Motor,  mtr_S1_C1_2,     motorL,        tmotorTetrix, PIDControl, reversed, encoder)
 #pragma config(Motor,  mtr_S1_C2_1,     motorF,        tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C2_2,     motorG,        tmotorTetrix, openLoop)
-#pragma config(Servo,  srvo_S1_C3_1,    servoFlip,            tServoNone)
+#pragma config(Servo,  srvo_S1_C3_1,    servoFlip,            tServoStandard)
 #pragma config(Servo,  srvo_S1_C3_2,    servo2,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_3,    servo3,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_4,    servo4,               tServoNone)
@@ -49,7 +47,7 @@ int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
 int servoMoveRange = 150; // Servo location to dump block (assumes 0 = rest position).
 
 float InchesToTape = 28;
-float InchesToRamp = 30;
+float InchesToRamp = 40;
 
 /*-----------------------------------------------------------------------------*/
 /*                                                                             */
@@ -138,7 +136,7 @@ task MotorSlewRateTask()
 
 void initializeRobot()
 {
-	servoChangeRate[servoFlip] = 2; // Servo Change Rate, positions per update (20ms).
+	servoChangeRate[servoFlip] = 10; // Servo Change Rate, positions per update (20ms).
 	servo[servoFlip] = flipper_start_pos;
 	ResetEncoders();
 	disableDiagnosticsDisplay();
@@ -377,13 +375,13 @@ task main()
 	wait10Msec(BEFORE_START_10MS);
 	StartTask(MotorSlewRateTask);
 
-	MovetoIR();
-	DumpBlock();
-	BackToStart();
-	Turn90(Left);
+	//MovetoIR();
+	//DumpBlock();
+	//BackToStart();
+	//Turn90(Left);
 	GoInches(InchesToTape, DRIVE_SPEED);
-	Turn90(Right);
-	GoInches(InchesToRamp, DRIVE_SPEED);
+	//Turn90(Right);
+	//GoInches(InchesToRamp, DRIVE_SPEED);
 
 	// Test Function Here
 	//MoveServo();

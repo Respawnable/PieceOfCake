@@ -40,13 +40,13 @@ int _dirAC = 0; //Sensor number
 int acS1, acS2, acS3, acS4, acS5 = 0; //Stores IR sensor values
 int maxSig = 0; // The max signal strength from the seeker.
 int flipper_start_pos = 0; //Flat
-int turnTime = 120; // Time (ms) to complete 90 degree turn.
+int turnTime = 84; // Time (ms) to complete 90 degree turn.
 // This variable is set by the MoveToIR function (It knows where the beacon is located).
 string beaconDirection = "L"; // Which side of the robot is the beacon on
 int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
 int servoMoveRange = 150; // Servo location to dump block (assumes 0 = rest position).
 
-float InchesToTape = 28;
+float InchesToTape = 29;
 float InchesToRamp = 40;
 
 /*-----------------------------------------------------------------------------*/
@@ -362,9 +362,33 @@ void Turn90(string direction)
 	// Adjust the requested direction to reflect the actual location of the beacon.
 	direction = beaconDirection == direction ? "L" : "R";
 	motorReq[motorL] = direction == "L" ? -DRIVE_SPEED : DRIVE_SPEED;
-	motorReq[motorR] = -motor[motorL];
+	motorReq[motorR] = direction == "L" ? DRIVE_SPEED : -DRIVE_SPEED;
 	wait10Msec(turnTime);
 	StopMotors();
+}
+
+void PlayEndSound()
+{
+	nVolume = 4;
+	PlaySoundFile("stopped.rso");
+	while (bSoundActive)
+	{};
+	wait1Msec(1000);
+	PlaySound(soundFastUpwardTones);
+	while (bSoundActive)
+	{};
+	wait1Msec(2000);
+
+	while (true)
+	{
+		PlaySoundFile("3.rso");
+		PlaySoundFile("7.rso");
+		PlaySoundFile("6.rso");
+		PlaySoundFile("3.rso");
+		while (bSoundActive)
+		{};
+		wait1Msec(1000);
+	}
 }
 
 task main()
@@ -375,13 +399,13 @@ task main()
 	wait10Msec(BEFORE_START_10MS);
 	StartTask(MotorSlewRateTask);
 
-	//MovetoIR();
-	//DumpBlock();
-	//BackToStart();
-	//Turn90(Left);
+	MovetoIR();
+	DumpBlock();
+	BackToStart();
+	Turn90(Left);
 	GoInches(InchesToTape, DRIVE_SPEED);
-	//Turn90(Right);
-	//GoInches(InchesToRamp, DRIVE_SPEED);
+	Turn90(Right);
+	GoInches(InchesToRamp, DRIVE_SPEED);
 
 	// Test Function Here
 	//MoveServo();
@@ -394,10 +418,5 @@ task main()
 	StopTask(MotorSlewRateTask);
 
 	// Wait for FCS to stop us.
-	while (true)
-	{
-		//note to self play songs
-		PlaySoundFile("woops.rso");
-		wait10Msec(200);
-	}
+		PlayEndSound();
 }

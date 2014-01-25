@@ -139,7 +139,7 @@ void initializeRobot()
 	servoChangeRate[servoFlip] = 10; // Servo Change Rate, positions per update (20ms).
 	servo[servoFlip] = flipper_start_pos;
 	ResetEncoders();
-	disableDiagnosticsDisplay();
+	//disableDiagnosticsDisplay();
 }
 
 int convert(float inches)
@@ -394,7 +394,7 @@ void PlayEndSound()
 task main()
 {
 	initializeRobot();
-	//waitForStart();
+	waitForStart();
 
 	wait10Msec(BEFORE_START_10MS);
 	StartTask(MotorSlewRateTask);

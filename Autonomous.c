@@ -44,10 +44,10 @@ int turnTime = 84; // Time (ms) to complete 90 degree turn.
 // This variable is set by the MoveToIR function (It knows where the beacon is located).
 string beaconDirection = "L"; // Which side of the robot is the beacon on
 int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
-int servoMoveRange = 150; // Servo location to dump block (assumes 0 = rest position).
+int servoMoveRange = 190; // Servo location to dump block (assumes 0 = rest position).
 
-float InchesToTape = 29;
-float InchesToRamp = 40;
+float InchesToTape = 32;
+float InchesToRamp = 45;
 
 /*-----------------------------------------------------------------------------*/
 /*                                                                             */
@@ -136,10 +136,10 @@ task MotorSlewRateTask()
 
 void initializeRobot()
 {
-	servoChangeRate[servoFlip] = 10; // Servo Change Rate, positions per update (20ms).
+	servoChangeRate[servoFlip] = 25; // Servo Change Rate, positions per update (20ms).
 	servo[servoFlip] = flipper_start_pos;
 	ResetEncoders();
-	disableDiagnosticsDisplay();
+	//disableDiagnosticsDisplay();
 }
 
 int convert(float inches)
@@ -194,7 +194,7 @@ void DumpBlock()
 	{
 		wait1Msec(20);
 	}
-
+	wait1Msec(500);
 	servo[servoFlip] = ServoValue[servoFlip] - servoMoveRange; //Move back to the starting position.
 }
 
@@ -413,10 +413,10 @@ task main()
 	//DriveSquareTest();
 	//LookForBeacon();
 
+	wait1Msec(300);
 	StopMotors();
-	wait1Msec(200);
 	StopTask(MotorSlewRateTask);
 
 	// Wait for FCS to stop us.
-		PlayEndSound();
+		//PlayEndSound();
 }

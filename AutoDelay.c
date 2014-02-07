@@ -27,7 +27,7 @@
 #include "rdpartyrobotcdr-3.3.1\drivers\hitechnic-irseeker-v2.h"
 
 // Pause for the other alliance?
-#define BEFORE_START_10MS 0
+#define BEFORE_START_1MS 3500
 #define DRIVE_SPEED 60
 #define ENCODER_TICKS_INCH 100
 #define ENCODER_TICKS_90_TURN 2880
@@ -44,10 +44,10 @@ int turnTime = 84; // Time (ms) to complete 90 degree turn.
 // This variable is set by the MoveToIR function (It knows where the beacon is located).
 string beaconDirection = "L"; // Which side of the robot is the beacon on
 int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
-int servoMoveRange = 150; // Servo location to dump block (assumes 0 = rest position).
+int servoMoveRange = 190; // Servo location to dump block (assumes 0 = rest position).
 
-float InchesToTape = 29;
-float InchesToRamp = 65;
+float InchesToTape = 32;
+float InchesToRamp = 45;
 
 /*-----------------------------------------------------------------------------*/
 /*                                                                             */
@@ -136,7 +136,7 @@ task MotorSlewRateTask()
 
 void initializeRobot()
 {
-	servoChangeRate[servoFlip] = 10; // Servo Change Rate, positions per update (20ms).
+	servoChangeRate[servoFlip] = 25; // Servo Change Rate, positions per update (20ms).
 	servo[servoFlip] = flipper_start_pos;
 	ResetEncoders();
 	//disableDiagnosticsDisplay();
@@ -194,7 +194,7 @@ void DumpBlock()
 	{
 		wait1Msec(20);
 	}
-
+	wait1Msec(500);
 	servo[servoFlip] = ServoValue[servoFlip] - servoMoveRange; //Move back to the starting position.
 }
 
@@ -262,7 +262,7 @@ void MovetoIR()
 			nxtDisplayTextLine(2, "maxSig: %d", maxSig);
 
 			wait10Msec(2);
-			if (_dirAC >= irGoal)
+			if (_dirAC >= irGoal && _dirAC != 5)
 			{
 				StopMotors();
 				DistanceToIR = nMotorEncoder[motorL];
@@ -396,15 +396,15 @@ task main()
 	initializeRobot();
 	waitForStart();
 
-	wait10Msec(BEFORE_START_10MS);
+	wait1Msec(BEFORE_START_1MS);
 	StartTask(MotorSlewRateTask);
 
-	//MovetoIR();
-	//DumpBlock();
-	//BackToStart();
-	//Turn90(Left);
-	//GoInches(InchesToTape, DRIVE_SPEED);
-	//Turn90(Right);
+	MovetoIR();
+	DumpBlock();
+	BackToStart();
+	Turn90(Left);
+	GoInches(InchesToTape, DRIVE_SPEED);
+	Turn90(Right);
 	GoInches(InchesToRamp, DRIVE_SPEED);
 
 	// Test Function Here
@@ -412,6 +412,7 @@ task main()
 	//PointTurn(Left);
 	//DriveSquareTest();
 	//LookForBeacon();
+
 	wait1Msec(300);
 	StopMotors();
 	StopTask(MotorSlewRateTask);

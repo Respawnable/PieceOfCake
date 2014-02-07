@@ -262,7 +262,7 @@ void MovetoIR()
 			nxtDisplayTextLine(2, "maxSig: %d", maxSig);
 
 			wait10Msec(2);
-			if (_dirAC >= irGoal)
+			if (_dirAC >= irGoal && _dirAC != 5)
 			{
 				StopMotors();
 				DistanceToIR = nMotorEncoder[motorL];
@@ -367,7 +367,7 @@ void Turn90(string direction)
 	StopMotors();
 }
 
-void PlayEndSound()
+void EndOfMatch()
 {
 	nVolume = 4;
 	PlaySoundFile("stopped.rso");
@@ -418,5 +418,5 @@ task main()
 	StopTask(MotorSlewRateTask);
 
 	// Wait for FCS to stop us.
-		//PlayEndSound();
+		EndOfMatch();
 }

@@ -394,7 +394,7 @@ void EndOfMatch()
 task main()
 {
 	initializeRobot();
-	//waitForStart();
+	waitForStart();
 
 	wait10Msec(BEFORE_START_10MS);
 	StartTask(MotorSlewRateTask);

@@ -19,7 +19,7 @@
 #define BEFORE_START_10MS 0
 #define DRIVE_SPEED 60
 #define ENCODER_TICKS_INCH 100
-#define ENCODER_TICKS_90_TURN 2880
+#define ENCODER_TICKS_90_TURN 6000
 
 string Left = "L";
 string Right = "R";
@@ -338,8 +338,8 @@ void PointTurn(string direction)
 	nMotorEncoderTarget[motorL] = direction == "L" ? -ENCODER_TICKS_90_TURN : ENCODER_TICKS_90_TURN;
 	nMotorEncoderTarget[motorR] = direction == "L" ? ENCODER_TICKS_90_TURN : -ENCODER_TICKS_90_TURN;
 	wait1Msec(200);
-	motorReq[motorL] = DRIVE_SPEED;
-	motorReq[motorR] = -DRIVE_SPEED;
+	motor[motorL] = DRIVE_SPEED;
+	motor[motorR] = -DRIVE_SPEED;
 	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
 	{
 	}
@@ -383,19 +383,19 @@ void EndOfMatch()
 task main()
 {
 	StartTask(MotorSlewRateTask);
-	while(true)
-	{
-
-		// Test Function Here
-		//MoveServo();
-		Turn90(Left);
-		//PointTurn(Left);
+	wait10Msec(100);
+		//Test Function Here
+		MoveServo();
+		//Turn90(Left);
+		PointTurn(Left);
 		//DriveSquareTest();
 		//LookForBeacon();
 		//driveMotors(20, 20);
-		StopMotors();
+		//StopMotors();
 		//StopTask(MotorSlewRateTask);
+	while(true)
+	{
 	}
-	// Wait for FCS to stop us.
-	EndOfMatch();
+	// Wait for FCS to stop us
+	//EndOfMatch();
 }

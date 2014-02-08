@@ -8,7 +8,7 @@
 #pragma config(Motor,  mtr_S1_C2_1,     motorLift,     tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C2_2,     motorW1,       tmotorTetrix, openLoop)
 #pragma config(Motor,  mtr_S1_C4_1,     motorW2,       tmotorTetrix, openLoop)
-#pragma config(Motor,  mtr_S1_C4_2,     motorI,        tmotorTetrix, openLoop)
+#pragma config(Motor,  mtr_S1_C4_2,     motorF,        tmotorTetrix, openLoop)
 #pragma config(Servo,  srvo_S1_C3_1,    servo1,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_2,    servo2,               tServoNone)
 #pragma config(Servo,  srvo_S1_C3_3,    servo3,               tServoNone)
@@ -37,11 +37,12 @@ int MOTOR_LP = 55;
 int MOTOR_LN = -MOTOR_LP;
 int MOTOR_WP = 75;
 int MOTOR_WN = -MOTOR_WP;
+int MOTOR_F = 50;
 
 
 /*-----------------------------------------------------------------------------*/
 /*                                                                             */
-/*  definitiona and variables for the motor slew rate controller.              */
+/*  definitions and variables for the motor slew rate controller.              */
 /*                                                                             */
 /*-----------------------------------------------------------------------------*/
 
@@ -185,6 +186,15 @@ void moveWinch()
 	{
 		motor[motorW1] = MOTOR_WN;
 		motor[motorW2] = MOTOR_WN;
+	}
+}
+
+void raiseFlag()
+{
+	if(joystick.joy2_TopHat == 0)
+	{
+		motor[motorF] = MOTOR_F;
+
 	}
 }
 

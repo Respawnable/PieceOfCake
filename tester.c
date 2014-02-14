@@ -252,7 +252,7 @@ void MovetoIR()
 
 			wait10Msec(2);
 			if (_dirAC >= irGoal && _dirAC != 5)
-		{
+			{
 				StopMotors();
 				DistanceToIR = nMotorEncoder[motorL];
 				FindState++;
@@ -335,11 +335,11 @@ void PointTurn(string direction)
 	// Adjust the requested direction to reflect the actual location of the beacon.
 	direction = beaconDirection == direction ? "L" : "R";
 	ResetEncoders();
-	nMotorEncoderTarget[motorL] = direction == "L" ? -ENCODER_TICKS_90_TURN : ENCODER_TICKS_90_TURN;
-	nMotorEncoderTarget[motorR] = direction == "L" ? ENCODER_TICKS_90_TURN : -ENCODER_TICKS_90_TURN;
+	nMotorEncoderTarget[motorL] = ENCODER_TICKS_90_TURN;
+	nMotorEncoderTarget[motorR] = ENCODER_TICKS_90_TURN;
 	wait1Msec(200);
-	motor[motorL] = DRIVE_SPEED;
-	motor[motorR] = -DRIVE_SPEED;
+	motor[motorL] = direction == "L" ? -DRIVE_SPEED : DRIVE_SPEED;
+	motor[motorR] = direction == "L" ? DRIVE_SPEED : -DRIVE_SPEED;
 	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
 	{
 	}
@@ -349,9 +349,9 @@ void PointTurn(string direction)
 void Turn90(string direction)
 {
 	// Adjust the requested direction to reflect the actual location of the beacon.
-	direction = beaconDirection == direction ? "L" : "R";
-	motorReq[motorL] = direction == "L" ? -DRIVE_SPEED : DRIVE_SPEED;
-	motorReq[motorR] = direction == "L" ? DRIVE_SPEED : -DRIVE_SPEED;
+direction = beaconDirection == direction ? "L" : "R";
+motorReq[motorL] = direction == "L" ? -DRIVE_SPEED : DRIVE_SPEED;
+motorReq[motorR] = direction == "L" ? DRIVE_SPEED : -DRIVE_SPEED;
 	wait10Msec(turnTime);
 	StopMotors();
 }
@@ -384,15 +384,15 @@ task main()
 {
 	StartTask(MotorSlewRateTask);
 	wait10Msec(100);
-		//Test Function Here
-		MoveServo();
-		//Turn90(Left);
-		PointTurn(Left);
-		//DriveSquareTest();
-		//LookForBeacon();
-		//driveMotors(20, 20);
-		//StopMotors();
-		//StopTask(MotorSlewRateTask);
+	//Test Function Here
+	MoveServo();
+	//Turn90(Left);
+	PointTurn(Left);
+	//DriveSquareTest();
+	//LookForBeacon();
+	//driveMotors(20, 20);
+	//StopMotors();
+	//StopTask(MotorSlewRateTask);
 	while(true)
 	{
 	}

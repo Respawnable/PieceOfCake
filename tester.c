@@ -19,7 +19,7 @@
 #define BEFORE_START_10MS 0
 #define DRIVE_SPEED 60
 #define ENCODER_TICKS_INCH 100
-#define ENCODER_TICKS_90_TURN 6000
+#define ENCODER_TICKS_90_TURN 2275
 
 string Left = "L";
 string Right = "R";
@@ -29,7 +29,7 @@ int _dirAC = 0; //Sensor number
 int acS1, acS2, acS3, acS4, acS5 = 0; //Stores IR sensor values
 int maxSig = 0; // The max signal strength from the seeker.
 int flipper_start_pos = 0; //Flat
-int turnTime = 84; // Time (ms) to complete 90 degree turn.
+int turnTime = 87; // Time (ms) to complete 90 degree turn.
 // This variable is set by the MoveToIR function (It knows where the beacon is located).
 string beaconDirection = "L"; // Which side of the robot is the beacon on
 int irGoal = 3; // Which sensor is pointing to the left or right of the robot?
@@ -63,6 +63,7 @@ int motorSlew[ MOTOR_NUM ];
 void Turn90(string direction);
 void ResetEncoders();
 void StopMotors();
+void PointTurn(string direction);
 
 /*-----------------------------------------------------------------------------*/
 /*                                                                             */
@@ -329,11 +330,37 @@ void DriveSquareTest()
 	GoInches(InchesToTape, DRIVE_SPEED);
 }
 
+void DriveSquarePoint(string direction)
+{
+	if (direction == Left){
+		PointTurn(Left);
+		GoInches(InchesToTape, DRIVE_SPEED);
+		PointTurn(Left);
+		GoInches(InchesToTape, DRIVE_SPEED);
+		PointTurn(Left);
+		GoInches(InchesToTape, DRIVE_SPEED);
+		PointTurn(Left);
+		GoInches(InchesToTape, DRIVE_SPEED);
+	}
+
+	else{
+		PointTurn(Right);
+		GoInches(InchesToTape, DRIVE_SPEED);
+		PointTurn(Right);
+		GoInches(InchesToTape, DRIVE_SPEED);
+		PointTurn(Right);
+		GoInches(InchesToTape, DRIVE_SPEED);
+		PointTurn(Right);
+		GoInches(InchesToTape, DRIVE_SPEED);
+	}
+}
+
 // This function uses encoders to turn.
 void PointTurn(string direction)
 {
 	// Adjust the requested direction to reflect the actual location of the beacon.
 	direction = beaconDirection == direction ? "L" : "R";
+	StopTask(MotorSlewRateTask);
 	ResetEncoders();
 	nMotorEncoderTarget[motorL] = ENCODER_TICKS_90_TURN;
 	nMotorEncoderTarget[motorR] = ENCODER_TICKS_90_TURN;
@@ -343,6 +370,7 @@ void PointTurn(string direction)
 	while (nMotorRunState[motorL] != runStateIdle || nMotorRunState[motorR] != runStateIdle)
 	{
 	}
+	StartTask(MotorSlewRateTask);
 }
 
 // Turn 90 degrees.
@@ -356,43 +384,22 @@ motorReq[motorR] = direction == "L" ? DRIVE_SPEED : -DRIVE_SPEED;
 	StopMotors();
 }
 
-void EndOfMatch()
-{
-	nVolume = 4;
-	PlaySoundFile("stopped.rso");
-	while (bSoundActive)
-	{};
-	wait1Msec(1000);
-	PlaySound(soundFastUpwardTones);
-	while (bSoundActive)
-	{};
-	wait1Msec(2000);
-
-	while (true)
-	{
-		PlaySoundFile("3.rso");
-		PlaySoundFile("7.rso");
-		PlaySoundFile("6.rso");
-		PlaySoundFile("3.rso");
-		while (bSoundActive)
-		{};
-		wait1Msec(1000);
-	}
-}
-
 task main()
 {
 	StartTask(MotorSlewRateTask);
 	wait10Msec(100);
 	//Test Function Here
-	MoveServo();
-	//Turn90(Left);
-	PointTurn(Left);
+	//MoveServo();
+	//Turn90(Right);
+	//PointTurn(Left);
 	//DriveSquareTest();
+	DriveSquarePoint(Right);
 	//LookForBeacon();
 	//driveMotors(20, 20);
-	//StopMotors();
-	//StopTask(MotorSlewRateTask);
+	StopMotors();
+	StopTask(MotorSlewRateTask);
+	//motor[motorL] = 0;
+	//motor[motorR] = 0;
 	while(true)
 	{
 	}
